@@ -1,0 +1,143 @@
+{
+    "morning": {
+        "protein_powder": {
+            "serving": 100,
+            "kcal": 370.0,
+            "protein": 29.0,
+            "carbs": 50.0,
+            "fat": 8.24
+        },
+        "banana": {
+            "serving": 1,
+            "kcal": 89.0,
+            "protein": 1.1,
+            "carbs": 23.0,
+            "fat": 0.3
+        },
+        "channa": {
+            "serving": 50,
+            "kcal": 180.0,
+            "protein": 9,
+            "carbs": 30.0,
+            "fat": 3
+        },
+        "chia seeds": {
+            "serving": 100,
+            "kcal": 490.0,
+            "protein": 16,
+            "carbs": 44.0,
+            "fat": 31
+        },
+        "sunflower seeds": {
+            "serving": 100,
+            "kcal": 582.0,
+            "protein": 19,
+            "carbs": 24.0,
+            "fat": 55
+        },
+        "flax seeds": {
+            "serving": 100,
+            "kcal": 534.0,
+            "protein": 18,
+            "carbs": 29.0,
+            "fat": 42
+        },
+        "pumpkin seeds": {
+            "serving": 100,
+            "kcal": 446.0,
+            "protein": 19,
+            "carbs": 54.0,
+            "fat": 19
+        },
+        "dabur_honey": {
+            "serving": 100,
+            "kcal": 320.0,
+            "protein": 0,
+            "carbs": 80.0,
+            "fat": 0
+        }
+    },
+    "lunch": {
+        "oats Yogabar": {
+            "serving": 50,
+            "kcal": 177.0,
+            "protein": 13,
+            "carbs": 26,
+            "fat": 3.6
+        },
+        "oats pintola": {
+            "serving": 50,
+            "kcal": 196.0,
+            "protein": 12.5,
+            "carbs": 27.3,
+            "fat": 3.9
+        },
+        "oats MB": {
+            "serving": 100,
+            "kcal": 386.0,
+            "protein": 12,
+            "carbs": 68,
+            "fat": 9.5
+        },
+        "milk": {
+            "serving": 100,
+            "kcal": 87.0,
+            "protein": 3.2,
+            "carbs": 5.0,
+            "fat": 6.0
+        },
+        "milk low fat": {
+            "serving": 100,
+            "kcal": 47.0,
+            "protein": 3.3,
+            "carbs": 5.0,
+            "fat": 1.5
+        },
+        "peanut_butter": {
+            "serving": 32,
+            "kcal": 192.0,
+            "protein": 9.6,
+            "carbs": 5.4,
+            "fat": 14.7
+        },
+        "sattu": {
+            "serving": 50,
+            "kcal": 205.5,
+            "protein": 11.0,
+            "carbs": 23.0,
+            "fat": 6.0
+        }
+    },
+    "evening": {
+        "egg": {
+            "serving": 1,
+            "kcal": 78.0,
+            "protein": 5.5,
+            "carbs": 0.4,
+            "fat": 5.3
+        }
+    },
+    "dinner": {
+        "roti": {
+            "serving": 1,
+            "kcal": 90.0,
+            "protein": 2.5,
+            "carbs": 16.5,
+            "fat": 1.5
+        },
+        "rice": {
+            "serving": 100,
+            "kcal": 130.0,
+            "protein": 2.5,
+            "carbs": 28.0,
+            "fat": 0.3
+        },
+        "paneer bhurji": {
+            "serving": 250,
+            "kcal": 290.0,
+            "protein": 15,
+            "carbs": 20.0,
+            "fat": 20
+        }
+    }
+}
