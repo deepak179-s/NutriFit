@@ -1,0 +1,26 @@
+{
+  "name": "nutrifit-pro",
+  "version": "1.0.0",
+  "description": "Nutrition tracker with cloud sync",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder -m"
+  },
+  "build": {
+    "appId": "com.nutrifit.app",
+    "productName": "NutriFit Pro",
+    "mac": {
+      "target": ["dmg"]
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^41.1.1",
+    "electron-builder": "^26.8.1",
+    "firebase": "^12.11.0"
+  }
+}
