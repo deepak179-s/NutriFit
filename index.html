@@ -256,6 +256,21 @@
   .split-bar{display:flex;height:3px;border-radius:2px;overflow:hidden;gap:1px;margin-top:10px}
   .split-seg{height:100%;border-radius:1px;transition:width 0.5s}
   
+  #auth-overlay{
+    position:fixed;inset:0;background:rgba(13,13,15,0.95);backdrop-filter:blur(8px);
+    z-index:9999;display:flex;align-items:center;justify-content:center;
+    padding:20px;
+  }
+  .auth-box{
+    background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);
+    padding:32px;width:100%;max-width:360px;
+  }
+  .auth-title{font-size:22px;font-weight:600;margin-bottom:8px;letter-spacing:-0.4px}
+  .auth-sub{font-size:13px;color:var(--text3);margin-bottom:24px}
+  .auth-tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border)}
+  .a-tab{padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text3);border-bottom:2px solid transparent}
+  .a-tab.active{color:var(--text);border-bottom-color:var(--accent)}
+
   /* TOAST */
   #toast{
     position:fixed;bottom:24px;right:24px;
@@ -316,7 +331,31 @@
 </head>
 <body>
 
-<div id="app">
+<div id="auth-overlay" style="display:none">
+  <div class="auth-box">
+    <div class="auth-title">Welcome to NutriFit</div>
+    <div class="auth-sub">Sync across all your devices</div>
+    <div class="auth-tabs">
+      <div class="a-tab active" id="tab-login" onclick="switchAuth('login')">Log In</div>
+      <div class="a-tab" id="tab-signup" onclick="switchAuth('signup')">Sign Up</div>
+    </div>
+    <div class="form-group" id="f-name" style="display:none">
+      <label class="form-label">Full Name</label>
+      <input class="form-input" id="auth-name" type="text" placeholder="e.g. John Doe">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input class="form-input" id="auth-user" type="text" placeholder="Username">
+    </div>
+    <div class="form-group" style="margin-bottom:24px">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="auth-pass" type="password" placeholder="Any password">
+    </div>
+    <button class="btn btn-primary btn-full" id="btn-auth" onclick="handleAuth()">Log In</button>
+  </div>
+</div>
+
+<div id="app" style="display:none">
   <!-- SIDEBAR -->
   <div id="sidebar">
     <div class="sidebar-top">
@@ -724,19 +763,15 @@
               </div>
             </div>
           </div>
-          <div class="section-title" style="margin-top:20px">Cloud Sync</div>
+          <div class="section-title" style="margin-top:20px">Account</div>
           <div class="card card-sm">
             <div class="settings-row" style="border:none">
               <div class="settings-info">
-                <div class="settings-name">Sync Code</div>
-                <div class="settings-desc">Enter the same code on laptop & phone to sync real-time</div>
+                <div class="settings-name" id="account-name">Logged In</div>
+                <div class="settings-desc">Your data is synced securely.</div>
               </div>
-              <div style="display:flex;gap:8px">
-                <input class="form-input" id="set-sync-code" type="text" placeholder="e.g. DEEPAK123" style="width:140px;text-align:center">
-                <button class="btn btn-primary" onclick="saveSyncCode()">Connect</button>
-              </div>
+              <button class="btn btn-danger btn-sm" onclick="logout()">Sign Out</button>
             </div>
-            <div id="sync-status" style="font-size:11px;color:var(--text3);margin-top:10px;text-align:right">Not connected</div>
           </div>
           <div class="section-title" style="margin-top:20px">Data</div>
           <div class="card card-sm">
@@ -797,7 +832,7 @@ function LS(key,def){
 }
 function LSset(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch{}}
 
-let syncCode = localStorage.getItem('nf_sync_code') || '';
+let nf_username = localStorage.getItem('nf_username') || '';
 
 let db = LS('nf_db', DEFAULT_DB);
 let settings = LS('nf_settings', DEFAULT_SETTINGS);
@@ -1274,7 +1309,7 @@ function deleteFood(cat,name){
 function initSettings(){
   document.getElementById('set-kcal').value=settings.goal_kcal;
   document.getElementById('set-pro').value=settings.goal_protein;
-  document.getElementById('set-sync-code').value=syncCode;
+  document.getElementById('account-name').textContent = 'Logged in as ' + nf_username;
   syncBulkUI();
 }
 
@@ -1312,7 +1347,7 @@ window.syncToCloud = null;
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-  import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBSFwIQAfrZ8Y-Pu4sVd7cTHbldE_yyMvw",
@@ -1329,44 +1364,78 @@ window.syncToCloud = null;
 
   let unsubscribe = null;
   let isRemoteUpdate = false;
+  let authMode = 'login';
 
-  window.saveSyncCode = function() {
-    const code = document.getElementById('set-sync-code').value.trim();
-    if(code === '') {
-      toast('Enter a sync code', 'red');
-      return;
-    }
-    syncCode = code;
-    localStorage.setItem('nf_sync_code', code);
-    toast('Sync code saved');
-    connectCloud();
+  window.switchAuth = function(mode) {
+    authMode = mode;
+    document.getElementById('tab-login').className = 'a-tab ' + (mode==='login'?'active':'');
+    document.getElementById('tab-signup').className = 'a-tab ' + (mode==='signup'?'active':'');
+    document.getElementById('f-name').style.display = mode==='signup' ? 'block' : 'none';
+    document.getElementById('btn-auth').textContent = mode==='signup' ? 'Sign Up' : 'Log In';
   };
 
-  function connectCloud() {
-    const statusEl = document.getElementById('sync-status');
-    if(!syncCode) {
-      if(statusEl) statusEl.textContent = 'Not connected';
-      return;
-    }
-    if(statusEl) statusEl.textContent = 'Connecting...';
+  window.logout = function() {
+    localStorage.removeItem('nf_username');
+    location.reload();
+  };
+
+  window.handleAuth = async function() {
+    const un = document.getElementById('auth-user').value.trim();
+    const pw = document.getElementById('auth-pass').value.trim();
+    const nm = document.getElementById('auth-name').value.trim();
     
+    if(!un || !pw) { toast('Please fill username and password', 'red'); return; }
+    
+    const userRef = doc(firestore, 'accounts', un);
+    const btn = document.getElementById('btn-auth');
+    btn.textContent = 'Processing...';
+    btn.disabled = true;
+
+    try {
+      const snap = await getDoc(userRef);
+      if(authMode === 'login') {
+        if(!snap.exists()) { toast('Username not found', 'red'); }
+        else if(snap.data().password !== pw) { toast('Incorrect password', 'red'); }
+        else { finishAuth(un); }
+      } else {
+        if(snap.exists()) { toast('Username already taken', 'red'); }
+        else if(!nm) { toast('Please enter your full name', 'red'); }
+        else { await setDoc(userRef, { name: nm, password: pw, createdAt: new Date() }); finishAuth(un); }
+      }
+    } catch(err) {
+      console.error(err);
+      toast('Network error occurred', 'red');
+    }
+    btn.textContent = authMode === 'signup' ? 'Sign Up' : 'Log In';
+    btn.disabled = false;
+  };
+
+  function finishAuth(un) {
+    nf_username = un;
+    localStorage.setItem('nf_username', un);
+    document.getElementById('auth-overlay').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    toast('Logged in successfully!');
+    if(document.getElementById('page-settings').classList.contains('active')) initSettings();
+    connectCloud();
+  }
+
+  function connectCloud() {
+    if(!nf_username) return;
     if(unsubscribe) unsubscribe();
     
-    const docRef = doc(firestore, 'users', syncCode);
+    const docRef = doc(firestore, 'users', nf_username);
     
     // Setup write function for saveAll
     window.syncToCloud = async () => {
-      if(isRemoteUpdate) return; // Prevent echoing back to server
+      if(isRemoteUpdate) return;
       try {
         await setDoc(docRef, { db, settings, mealLog, weightLog }, { merge: true });
-        if(statusEl) statusEl.textContent = 'Synced tracking to ✅ ' + syncCode;
       } catch (err) {
-        if(statusEl) statusEl.textContent = 'Sync failed ❌ ' + syncCode;
         console.error('Firebase DB Save error', err);
       }
     };
 
-    // First, sync local up if no remote exists yet, handled by merging
     window.syncToCloud();
 
     // Listen for remote updates
@@ -1385,35 +1454,30 @@ window.syncToCloud = null;
           LSset('nf_log',mealLog);
           LSset('nf_weight',weightLog);
           
-          // Refresh UI
           syncBulkUI();
           refreshDash();
           renderLogForm();
-          if(document.getElementById('page-weight').classList.contains('active')){
-            renderTrends();
-          }
-          if(document.getElementById('page-custom').classList.contains('active')){
-            renderCustomRemaining();
-          }
-          if(document.getElementById('page-settings').classList.contains('active')){
-            initSettings();
-          }
-          if(document.getElementById('page-foods').classList.contains('active')){
-            renderDBList(curDBTab);
-          }
+          if(document.getElementById('page-weight').classList.contains('active')) renderTrends();
+          if(document.getElementById('page-custom').classList.contains('active')) renderCustomRemaining();
+          if(document.getElementById('page-settings').classList.contains('active')) initSettings();
+          if(document.getElementById('page-foods').classList.contains('active')) renderDBList(curDBTab);
           
           isRemoteUpdate = false;
         }
       }
     }, (error) => {
       console.error("Firestore Listen error", error);
-      if(statusEl) statusEl.textContent = 'Sync error ❌ ' + syncCode;
     });
   }
 
-  // Auto connect if code exists
-  if(syncCode) {
+  // Auto connect if logged in
+  if(nf_username) {
+    document.getElementById('auth-overlay').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
     connectCloud();
+  } else {
+    document.getElementById('auth-overlay').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
   }
 </script>
 </body>
