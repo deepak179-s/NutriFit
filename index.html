@@ -1377,17 +1377,20 @@ window.syncToCloud = null;
     window.syncToCloud = async () => {
       if(isRemoteUpdate) return;
       try {
-        await setDoc(docRef, { db, settings, mealLog, weightLog }, { merge: true });
+        await setDoc(docRef, { db, settings, mealLog, weightLog });
       } catch (err) {
         console.error('Firebase DB Save error', err);
       }
     };
 
-    window.syncToCloud();
+    let firstLoad = true;
 
     // Listen for remote updates
     unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists() && !docSnap.metadata.hasPendingWrites) {
+      if (!docSnap.exists() && firstLoad) {
+        // Document doesn't exist on cloud, push local data (default setup)
+        window.syncToCloud();
+      } else if (docSnap.exists() && !docSnap.metadata.hasPendingWrites) {
         const data = docSnap.data();
         if(data) {
           isRemoteUpdate = true;
@@ -1412,6 +1415,7 @@ window.syncToCloud = null;
           isRemoteUpdate = false;
         }
       }
+      firstLoad = false;
     }, (error) => {
       console.error("Firestore Listen error", error);
     });
