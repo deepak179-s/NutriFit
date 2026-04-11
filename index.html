@@ -390,10 +390,7 @@
         <svg class="icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         <span>Quick Add</span>
       </div>
-      <div class="nav-item" onclick="gotoPage('weight',this)">
-        <svg class="icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 12L6 7l3 3 2-4 3 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span>Trends</span>
-      </div>
+      
       <div class="nav-label" style="margin-top:16px">Database</div>
       <div class="nav-item" onclick="gotoPage('foods',this)">
         <svg class="icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="3" width="12" height="2" rx="1" fill="currentColor" opacity="0.5"/><rect x="2" y="7" width="12" height="2" rx="1" fill="currentColor" opacity="0.8"/><rect x="2" y="11" width="8" height="2" rx="1" fill="currentColor" opacity="0.5"/></svg>
@@ -1200,98 +1197,6 @@ function saveCustomMeal(){
 }
 
 // ── TRENDS ────────────────────────────────────────────────
-function renderTrends(){
-  // Weight chart
-  const wt=weightLog.slice().sort((a,b)=>a.date.localeCompare(b.date));
-  const wtCanvas=document.getElementById('wt-canvas');
-  const wtEmpty=document.getElementById('wt-empty');
-  if(wt.length<2){wtCanvas.style.display='none';wtEmpty.style.display='block';}
-  else{wtCanvas.style.display='block';wtEmpty.style.display='none';drawLineChart(wtCanvas,wt.map(e=>e.date.slice(5)),wt.map(e=>e.weight),'#7c6af7',true);}
-
-  // 7-day averages
-  const d7=new Date();d7.setDate(d7.getDate()-7);const d7s=d7.toISOString().slice(0,10);
-  const recent=mealLog.filter(e=>e.date>=d7s);
-  const days={};
-  recent.forEach(e=>{if(!days[e.date])days[e.date]={kcal:0,protein:0};days[e.date].kcal+=e.kcal;days[e.date].protein+=e.protein;});
-  const dkeys=Object.keys(days);
-  const avgCal=dkeys.length?dkeys.reduce((s,k)=>s+days[k].kcal,0)/dkeys.length:null;
-  const avgPro=dkeys.length?dkeys.reduce((s,k)=>s+days[k].protein,0)/dkeys.length:null;
-  document.getElementById('trend-avg-cal').textContent=avgCal?Math.round(avgCal)+'<span style="font-size:12px"> kcal</span>':'—';
-  document.getElementById('trend-avg-pro').textContent=avgPro?Math.round(avgPro)+'<span style="font-size:12px"> g</span>':'—';
-
-  // Calorie chart last 14 days
-  const d14=new Date();d14.setDate(d14.getDate()-14);const d14s=d14.toISOString().slice(0,10);
-  const days14={};
-  mealLog.filter(e=>e.date>=d14s).forEach(e=>{if(!days14[e.date])days14[e.date]=0;days14[e.date]+=e.kcal;});
-  const calCanvas=document.getElementById('cal-canvas');
-  const calEmpty=document.getElementById('cal-empty');
-  const calKeys=Object.keys(days14).sort();
-  if(calKeys.length<2){calCanvas.style.display='none';calEmpty.style.display='block';}
-  else{calCanvas.style.display='block';calEmpty.style.display='none';drawLineChart(calCanvas,calKeys.map(k=>k.slice(5)),calKeys.map(k=>days14[k]),'#f5894e',false);}
-}
-
-function drawLineChart(canvas,labels,values,color,showDots){
-  const ctx=canvas.getContext('2d');
-  const W=canvas.offsetWidth||600;
-  canvas.width=W*2;canvas.height=canvas.height*2||360;
-  ctx.scale(2,2);
-  const w=W,h=canvas.height/2;
-  ctx.clearRect(0,0,w,h);
-  const pad={t:16,r:16,b:32,l:44};
-  const cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
-  const min=Math.min(...values)*0.9,max=Math.max(...values)*1.05;
-  const range=max-min||1;
-  function px(i){return pad.l+i/(labels.length-1)*cw}
-  function py(v){return pad.t+ch-(v-min)/range*ch}
-  // grid
-  ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=0.5;
-  for(let i=0;i<4;i++){
-    const y=pad.t+i*ch/3;
-    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
-  }
-  // labels y
-  ctx.fillStyle='rgba(152,152,170,0.7)';ctx.font='10px DM Mono,monospace';ctx.textAlign='right';
-  for(let i=0;i<=3;i++){
-    const v=min+range*(1-i/3);
-    const y=pad.t+i*ch/3;
-    ctx.fillText(Math.round(v),pad.l-6,y+4);
-  }
-  // x labels
-  ctx.textAlign='center';
-  const step=Math.max(1,Math.floor(labels.length/6));
-  labels.forEach((l,i)=>{if(i%step===0)ctx.fillText(l,px(i),h-6);});
-  // line
-  ctx.beginPath();ctx.moveTo(px(0),py(values[0]));
-  values.forEach((v,i)=>{if(i>0)ctx.lineTo(px(i),py(v));});
-  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.stroke();
-  // area fill
-  ctx.beginPath();ctx.moveTo(px(0),py(values[0]));
-  values.forEach((v,i)=>{if(i>0)ctx.lineTo(px(i),py(v));});
-  ctx.lineTo(px(values.length-1),pad.t+ch);ctx.lineTo(px(0),pad.t+ch);ctx.closePath();
-  ctx.fillStyle=color.replace('#','rgba(').replace(/(..)(..)(..)/, (m,r,g,b)=>`${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)},0.08)`);
-  ctx.fill();
-  // dots
-  if(showDots){
-    values.forEach((v,i)=>{
-      ctx.beginPath();ctx.arc(px(i),py(v),3,0,Math.PI*2);
-      ctx.fillStyle=color;ctx.fill();
-      ctx.strokeStyle='var(--bg2)';ctx.lineWidth=1;ctx.stroke();
-    });
-  }
-}
-
-function saveWeight(){
-  const val=parseFloat(document.getElementById('wt-input').value);
-  if(isNaN(val)||val<10){toast('Enter a valid weight','red');return;}
-  const t=today();
-  const idx=weightLog.findIndex(e=>e.date===t);
-  if(idx>=0)weightLog[idx].weight=val;
-  else weightLog.push({date:t,weight:val});
-  saveAll();
-  document.getElementById('wt-input').value='';
-  renderTrends();
-  toast('Weight saved: '+val+' kg');
-}
 
 // ── FOOD DB ───────────────────────────────────────────────
 let curDBTab='morning';
