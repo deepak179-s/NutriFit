@@ -575,6 +575,21 @@
                 <label class="form-label">Food / meal name</label>
                 <input class="form-input" id="ca-name" placeholder="e.g. Chicken biryani, street food, etc." oninput="updateCustomPreview()">
               </div>
+              <div class="grid2" style="margin-bottom:14px">
+                <div class="form-group" style="margin-bottom:0">
+                  <label class="form-label">Quantity</label>
+                  <div style="display:flex; gap:8px;">
+                    <input class="form-input" id="ca-weight" type="number" min="1" placeholder="100" oninput="updateCustomPreview()" style="width:60%">
+                    <select class="form-input" id="ca-unit" style="width:40%; padding:9px 4px;">
+                      <option value="g">g / ml</option>
+                      <option value="unit">units</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0; display:flex; align-items:flex-end;">
+                  <button class="btn btn-ghost btn-full" id="ca-btn-fetch" onclick="fetchNutrients()">Auto-Calculate</button>
+                </div>
+              </div>
               <div class="form-group">
                 <label class="form-label">Meal time</label>
                 <select class="form-input" id="ca-meal">
@@ -1136,6 +1151,94 @@ function saveLogMeal(){
 }
 
 // ── QUICK ADD (manual entry) ──────────────────────────────
+async function fetchNutrients(){
+  const name=document.getElementById('ca-name').value.trim();
+  const weight=parseFloat(document.getElementById('ca-weight').value)||100;
+  if(!name){toast('Please enter a food name first','red');return;}
+  
+  const btn=document.getElementById('ca-btn-fetch');
+  btn.textContent='Fetching...';
+  btn.disabled=true;
+  
+  // 1. Check local DB first
+  const lowerName = name.toLowerCase();
+  let localFood = null;
+  for(const cat in db) {
+    if(db[cat][lowerName]) {
+      localFood = db[cat][lowerName];
+      break;
+    }
+  }
+
+  if (localFood) {
+    const unitType = document.getElementById('ca-unit').value;
+    let factor = weight / localFood.serving; 
+    
+    if (unitType === 'g' && localFood.serving <= 10) {
+      factor = weight / 50; // Assume 1 unit = 50g for things like eggs/bananas
+    } else if (unitType === 'unit' && localFood.serving >= 50) {
+      factor = weight; // e.g. 2 units of 100g chicken = 2 * 100g = factor of 2
+    }
+
+    document.getElementById('ca-kcal').value = Math.round(localFood.kcal * factor);
+    document.getElementById('ca-pro').value = Math.round(localFood.protein * factor * 10) / 10;
+    document.getElementById('ca-carbs').value = Math.round(localFood.carbs * factor * 10) / 10;
+    document.getElementById('ca-fat').value = Math.round(localFood.fat * factor * 10) / 10;
+    
+    updateCustomPreview();
+    toast('Calculated from your local Food Database!');
+    btn.textContent='Auto-Calculate';
+    btn.disabled=false;
+    return;
+  }
+  
+  // 2. Fallback to Open Food Facts API
+  try{
+    const targetUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(name)}&search_simple=1&action=process&json=1&page_size=1`;
+    const url = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    
+    if(data.products && data.products.length > 0){
+      const p = data.products[0];
+      const nut = p.nutriments || {};
+      
+      const unitType = document.getElementById('ca-unit').value;
+      let factor = weight / 100;
+      if (unitType === 'unit') {
+        const serving = parseFloat(p.serving_quantity);
+        if (!isNaN(serving) && serving > 0) {
+          factor = (weight * serving) / 100;
+        } else {
+          toast('Serving size unknown. Treating 1 unit as 100g', 'red');
+          factor = weight; 
+        }
+      }
+      
+      const kcal = (nut['energy-kcal_100g'] || 0) * factor;
+      const pro = (nut['proteins_100g'] || 0) * factor;
+      const carb = (nut['carbohydrates_100g'] || 0) * factor;
+      const fat = (nut['fat_100g'] || 0) * factor;
+      
+      document.getElementById('ca-kcal').value = Math.round(kcal);
+      document.getElementById('ca-pro').value = Math.round(pro * 10) / 10;
+      document.getElementById('ca-carbs').value = Math.round(carb * 10) / 10;
+      document.getElementById('ca-fat').value = Math.round(fat * 10) / 10;
+      
+      updateCustomPreview();
+      toast('Nutrients fetched for ' + (p.product_name || name));
+    } else {
+      toast('Food not found in database','red');
+    }
+  } catch(e) {
+    console.error(e);
+    toast('Error fetching data','red');
+  }
+  
+  btn.textContent='Auto-Calculate';
+  btn.disabled=false;
+}
+
 function updateCustomPreview(){
   const kcal=parseFloat(document.getElementById('ca-kcal').value)||0;
   const pro=parseFloat(document.getElementById('ca-pro').value)||0;
@@ -1186,6 +1289,7 @@ function saveCustomMeal(){
   }
   saveAll();
   document.getElementById('ca-name').value='';
+  document.getElementById('ca-weight').value='';
   document.getElementById('ca-kcal').value='';
   document.getElementById('ca-pro').value='';
   document.getElementById('ca-carbs').value='';
