@@ -43,7 +43,9 @@ let settings = LS('nf_settings', DEFAULT_SETTINGS);
 let mealLog = LS('nf_log', []);
 let weightLog = LS('nf_weight', []);
 let waterLog = LS('nf_water', {});
-let chatHistory = LS('nf_chat', []);
+let chatSessions = LS('nf_sessions', [{id: Date.now(), title: 'New Chat', messages: []}]);
+let currentSessionId = chatSessions.length > 0 ? chatSessions[0].id : Date.now();
+if (chatSessions.length === 0) chatSessions.push({id: currentSessionId, title: 'New Chat', messages: []});
 
 function saveAll(){
   LSset('nf_db',db);
@@ -51,7 +53,7 @@ function saveAll(){
   LSset('nf_log',mealLog);
   LSset('nf_weight',weightLog);
   LSset('nf_water',waterLog);
-  LSset('nf_chat',chatHistory);
+  LSset('nf_sessions',chatSessions);
   if(window.syncToCloud) window.syncToCloud();
 }
 
@@ -667,21 +669,55 @@ function saveSettings(){
   toast('Settings saved');
 }
 
-// ── AI COACH ──────────────────────────────────────────────
+function toggleChatSidebar() {
+  document.getElementById('chat-sidebar').classList.toggle('collapsed');
+}
+
+function renderChatSidebar() {
+  const list = document.getElementById('session-list');
+  list.innerHTML = '';
+  chatSessions.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'session-item' + (s.id === currentSessionId ? ' active' : '');
+    div.textContent = s.title;
+    div.onclick = () => loadSession(s.id);
+    list.appendChild(div);
+  });
+}
+
+function loadSession(id) {
+  currentSessionId = id;
+  renderChatSidebar();
+  renderChatHistory();
+}
+
+function newSession() {
+  const id = Date.now();
+  chatSessions.unshift({ id, title: 'New Chat', messages: [] });
+  currentSessionId = id;
+  saveAll();
+  renderChatSidebar();
+  renderChatHistory();
+}
+
 function renderChatHistory() {
   const history = document.getElementById('chat-history');
   history.innerHTML = `<div class="chat-msg ai">Hello! I'm your NutriFit AI Coach. I have access to your daily macros and goals. How can I help you today?</div>`;
-  chatHistory.forEach(msg => {
-    const div = document.createElement('div');
-    div.className = msg.role === 'user' ? 'chat-msg user' : 'chat-msg ai';
-    div.textContent = msg.parts[0].text;
-    history.appendChild(div);
-  });
+  const session = chatSessions.find(s => s.id === currentSessionId);
+  if (session && session.messages) {
+    session.messages.forEach(msg => {
+      const div = document.createElement('div');
+      div.className = msg.role === 'user' ? 'chat-msg user' : 'chat-msg ai';
+      div.textContent = msg.parts[0].text;
+      history.appendChild(div);
+    });
+  }
   history.scrollTop = history.scrollHeight;
 }
 
 function clearChat() {
-  chatHistory = [];
+  const session = chatSessions.find(s => s.id === currentSessionId);
+  if(session) session.messages = [];
   saveAll();
   renderChatHistory();
 }
@@ -692,16 +728,27 @@ async function sendChat(){
   if(!text) return;
   if(!(import.meta.env.VITE_GEMINI_API_KEY || settings.gemini_key)){ toast('Please add Gemini API key in Settings','red'); return; }
   
-  chatHistory.push({ role: 'user', parts: [{ text }] });
+  const session = chatSessions.find(s => s.id === currentSessionId);
+  if (!session) return;
+  
+  if (session.messages.length === 0) {
+    session.title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+    renderChatSidebar();
+  }
+  
+  session.messages.push({ role: 'user', parts: [{ text }] });
   saveAll();
   renderChatHistory();
   input.value = '';
   
   const historyEl = document.getElementById('chat-history');
-  const loadDiv = document.createElement('div');
-  loadDiv.className = 'typing-indicator';
-  loadDiv.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-  historyEl.appendChild(loadDiv);
+  const aiDiv = document.createElement('div');
+  aiDiv.className = 'chat-msg ai';
+  aiDiv.textContent = '';
+  const loadIndicator = document.createElement('span');
+  loadIndicator.innerHTML = '<span class="typing-dot" style="display:inline-block;margin-left:4px"></span><span class="typing-dot" style="display:inline-block;margin-left:2px"></span><span class="typing-dot" style="display:inline-block;margin-left:2px"></span>';
+  aiDiv.appendChild(loadIndicator);
+  historyEl.appendChild(aiDiv);
   historyEl.scrollTop = historyEl.scrollHeight;
   
   try {
@@ -711,42 +758,61 @@ async function sendChat(){
     
     const sysPrompt = `You are an expert AI nutritionist and health coach named 'NutriFit AI'. The user's name is ${nf_username || 'User'}. Their daily goal is ${Math.round(g.kcal)} kcal and ${Math.round(g.protein)}g protein. Today they have consumed ${Math.round(t.kcal)} kcal and ${Math.round(t.protein)}g protein. Their current weight is ${w} kg. Be concise, encouraging, and helpful. Format your responses as plain text with short paragraphs.`;
     
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${(import.meta.env.VITE_GEMINI_API_KEY || settings.gemini_key)}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:streamGenerateContent?alt=sse&key=${(import.meta.env.VITE_GEMINI_API_KEY || settings.gemini_key)}`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         system_instruction: { parts: { text: sysPrompt } },
-        contents: chatHistory
+        contents: session.messages
       })
     });
     
-    const data = await res.json();
-    historyEl.removeChild(loadDiv);
-    
-    if(data.error){
-      toast('API Error: ' + data.error.message, 'red');
-      chatHistory.pop();
-      saveAll();
-      renderChatHistory();
-      return;
+    if(!res.ok){
+      const errData = await res.json();
+      throw new Error(errData.error?.message || 'API Error');
     }
     
-    const reply = data.candidates[0].content.parts[0].text;
-    chatHistory.push({ role: 'model', parts: [{ text: reply }] });
+    aiDiv.removeChild(loadIndicator);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let fullResponse = '';
+    
+    while(true) {
+      const {done, value} = await reader.read();
+      if(done) break;
+      const chunk = decoder.decode(value, {stream: true});
+      const lines = chunk.split('\\n');
+      for(const line of lines) {
+        if(line.startsWith('data: ')) {
+          const dataStr = line.replace('data: ', '').trim();
+          if(dataStr) {
+            try {
+              const data = JSON.parse(dataStr);
+              if(data.candidates && data.candidates[0].content.parts[0].text) {
+                fullResponse += data.candidates[0].content.parts[0].text;
+                aiDiv.textContent = fullResponse;
+                historyEl.scrollTop = historyEl.scrollHeight;
+              }
+            } catch(e) {}
+          }
+        }
+      }
+    }
+    
+    session.messages.push({ role: 'model', parts: [{ text: fullResponse }] });
     saveAll();
-    renderChatHistory();
     
   } catch(err){
-    historyEl.removeChild(loadDiv);
-    chatHistory.pop();
+    aiDiv.textContent = 'Error: ' + err.message;
+    session.messages.pop();
     saveAll();
-    renderChatHistory();
     toast('Failed to reach AI Coach', 'red');
   }
 }
 
 // ── INIT ──────────────────────────────────────────────────
 document.getElementById('page-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+renderChatSidebar();
 renderChatHistory();
 document.getElementById('log-meal-type').value=autoMealType();
 refreshDash();
@@ -851,7 +917,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebas
     window.syncToCloud = async () => {
       if(isRemoteUpdate) return;
       try {
-        await setDoc(docRef, { db, settings, mealLog, weightLog, waterLog, chatHistory });
+        await setDoc(docRef, { db, settings, mealLog, weightLog, waterLog, chatSessions });
       } catch (err) {
         console.error('Firebase DB Save error', err);
       }
@@ -873,14 +939,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebas
           if(data.mealLog) mealLog = data.mealLog;
           if(data.weightLog) weightLog = data.weightLog;
           if(data.waterLog) waterLog = data.waterLog;
-          if(data.chatHistory) chatHistory = data.chatHistory;
+          if(data.chatSessions) chatSessions = data.chatSessions;
           
           LSset('nf_db',db);
           LSset('nf_settings',settings);
           LSset('nf_log',mealLog);
           LSset('nf_weight',weightLog);
           LSset('nf_water',waterLog);
-          LSset('nf_chat',chatHistory);
+          LSset('nf_sessions',chatSessions);
           
           syncBulkUI();
           refreshDash();
