@@ -4,45 +4,46 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NutriFit Pro</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
-    --bg:#0d0d0f;
-    --bg1:#111113;
-    --bg2:#16161a;
-    --bg3:#1c1c21;
-    --bg4:#222228;
-    --border:#2a2a32;
-    --border2:#333340;
-    --text:#e8e8ec;
-    --text2:#9898aa;
-    --text3:#5a5a6e;
-    --accent:#7c6af7;
-    --accent2:#9d8fff;
-    --green:#3ecf8e;
-    --green2:#1a5c3e;
-    --orange:#f5894e;
-    --orange2:#5c2e14;
-    --red:#e05555;
-    --radius:8px;
-    --radius2:12px;
+    --bg:#09090b;
+    --bg1:rgba(18,18,20,0.6);
+    --bg2:rgba(22,22,26,0.6);
+    --bg3:rgba(28,28,33,0.8);
+    --bg4:rgba(34,34,40,0.9);
+    --border:rgba(42,42,50,0.5);
+    --border2:rgba(51,51,64,0.6);
+    --text:#f8fafc;
+    --text2:#94a3b8;
+    --text3:#64748b;
+    --accent:#8b5cf6;
+    --accent2:#a78bfa;
+    --green:#10b981;
+    --green2:#047857;
+    --orange:#f59e0b;
+    --orange2:#b45309;
+    --red:#ef4444;
+    --radius:12px;
+    --radius2:16px;
+    --glass-blur: blur(12px);
   }
   :root.light-mode{
-    --bg:#f8f9fa;
-    --bg1:#ffffff;
-    --bg2:#ffffff;
-    --bg3:#f1f3f5;
-    --bg4:#e9ecef;
-    --border:#e9ecef;
-    --border2:#dee2e6;
-    --text:#212529;
-    --text2:#495057;
-    --text3:#868e96;
+    --bg:#f8fafc;
+    --bg1:rgba(255,255,255,0.7);
+    --bg2:rgba(255,255,255,0.8);
+    --bg3:rgba(241,245,249,0.9);
+    --bg4:rgba(226,232,240,0.9);
+    --border:rgba(226,232,240,0.6);
+    --border2:rgba(203,213,225,0.8);
+    --text:#0f172a;
+    --text2:#475569;
+    --text3:#94a3b8;
     --accent:#6366f1;
-    --accent2:#4f46e5;
+    --accent2:#818cf8;
   }
-  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5;overflow:hidden;transition:background 0.3s,color 0.3s;}
+  html,body{height:100%;background:var(--bg);background-image:radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.08), transparent 25%), radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.08), transparent 25%);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;overflow:hidden;transition:background 0.3s,color 0.3s;}
   
   /* LAYOUT */
   #app{display:flex;height:100vh}
@@ -51,17 +52,19 @@
   #sidebar{
     width:220px;flex-shrink:0;
     background:var(--bg1);
+    backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
     border-right:1px solid var(--border);
     display:flex;flex-direction:column;
     padding:0;
     user-select:none;
+    z-index: 10;
   }
   .sidebar-top{padding:40px 20px 16px;border-bottom:1px solid var(--border);-webkit-app-region:drag;}
-  .app-name{font-size:15px;font-weight:600;letter-spacing:-0.3px;color:var(--text)}
-  .app-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:'DM Mono',monospace}
+  .app-name{font-size:16px;font-weight:700;letter-spacing:-0.5px;color:var(--text);background:linear-gradient(90deg, var(--accent), var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .app-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace}
   
   .nav-section{padding:12px 12px;flex:1}
-  .nav-label{font-size:10px;font-weight:500;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);padding:0 8px;margin-bottom:6px}
+  .nav-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text3);padding:0 8px;margin-bottom:6px}
   .nav-item{
     display:flex;align-items:center;gap:10px;
     padding:8px 10px;border-radius:var(--radius);
@@ -95,16 +98,18 @@
   .toggle-pill.on .toggle-dot{transform:translateX(14px)}
   
   /* MAIN */
-  #main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+  #main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:transparent}
   
   /* TOP BAR */
   #topbar{
     padding:16px 28px;border-bottom:1px solid var(--border);
     display:flex;align-items:center;justify-content:space-between;
-    flex-shrink:0;background:var(--bg);
+    flex-shrink:0;background:var(--bg1);
+    backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+    z-index: 5;
   }
-  .page-title{font-size:18px;font-weight:500;letter-spacing:-0.3px}
-  .page-date{font-size:12px;color:var(--text3);font-family:'DM Mono',monospace}
+  .page-title{font-size:20px;font-weight:600;letter-spacing:-0.5px}
+  .page-date{font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace}
   .topbar-right{display:flex;align-items:center;gap:12px}
   
   /* CONTENT */
@@ -114,13 +119,15 @@
   #content::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
   
   /* PAGES */
-  .page{display:none}
-  .page.active{display:block}
+  .page{display:none; opacity:0; transform:translateY(10px); transition: opacity 0.3s ease, transform 0.3s ease;}
+  .page.active{display:block; opacity:1; transform:translateY(0);}
   
   /* CARDS */
   .card{
     background:var(--bg2);border:1px solid var(--border);
+    backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
     border-radius:var(--radius2);padding:20px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1);
   }
   .card-sm{padding:16px}
   
@@ -130,13 +137,14 @@
   .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
   
   /* STAT CARD */
-  .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:16px 20px}
-  .stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;font-weight:500}
-  .stat-value{font-size:26px;font-weight:300;letter-spacing:-1px;font-family:'DM Mono',monospace}
-  .stat-sub{font-size:11px;color:var(--text3);margin-top:4px;font-family:'DM Mono',monospace}
+  .stat-card{background:var(--bg2);border:1px solid var(--border);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border-radius:var(--radius2);padding:16px 20px;box-shadow: 0 4px 24px rgba(0,0,0,0.1);}
+  .stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;font-weight:600}
+  .stat-value{font-size:28px;font-weight:400;letter-spacing:-1px;font-family:'JetBrains Mono',monospace}
+  .stat-sub{font-size:11px;color:var(--text3);margin-top:4px;font-family:'JetBrains Mono',monospace}
   .stat-value.green{color:var(--green)}
   .stat-value.orange{color:var(--orange)}
   .stat-value.purple{color:var(--accent2)}
+  .stat-value.cyan{color:#06b6d4}
   
   /* PROGRESS */
   .progress-wrap{margin-bottom:20px}
@@ -500,6 +508,19 @@
             </div>
             <div style="margin-top:12px">
               <button class="btn btn-danger btn-sm" onclick="deleteLastMeal()">Delete last entry</button>
+            </div>
+            <div style="margin-top:24px">
+              <div class="section-title">Water Tracker</div>
+              <div class="card card-sm" style="display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div class="stat-value cyan" id="water-val">0</div>
+                  <div class="stat-sub">/ 8 glasses</div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-ghost" style="padding:4px 12px;font-size:16px" onclick="updateWater(-1)">-</button>
+                  <button class="btn btn-primary" style="padding:4px 12px;font-size:16px;background:#06b6d4" onclick="updateWater(1)">+</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -876,12 +897,14 @@ let db = LS('nf_db', DEFAULT_DB);
 let settings = LS('nf_settings', DEFAULT_SETTINGS);
 let mealLog = LS('nf_log', []);
 let weightLog = LS('nf_weight', []);
+let waterLog = LS('nf_water', {});
 
 function saveAll(){
   LSset('nf_db',db);
   LSset('nf_settings',settings);
   LSset('nf_log',mealLog);
   LSset('nf_weight',weightLog);
+  LSset('nf_water',waterLog);
   if(window.syncToCloud) window.syncToCloud();
 }
 
@@ -972,6 +995,9 @@ function setRing(id,pct){
 }
 
 function refreshDash(){
+  const waterEl = document.getElementById('water-val');
+  if(waterEl) waterEl.textContent = waterLog[today()] || 0;
+
   const t=todayTotals();
   const g=getGoals();
   const calPct=g.kcal>0?t.kcal/g.kcal:0;
@@ -1061,6 +1087,15 @@ function clearToday(){
   saveAll();
   refreshDash();
   toast('Today\'s meals cleared','red');
+}
+
+function updateWater(delta){
+  const t = today();
+  const current = waterLog[t] || 0;
+  const next = Math.max(0, current + delta);
+  waterLog[t] = next;
+  saveAll();
+  refreshDash();
 }
 
 // ── LOG MEAL FROM DB ──────────────────────────────────────
@@ -1301,6 +1336,117 @@ function saveCustomMeal(){
 }
 
 // ── TRENDS ────────────────────────────────────────────────
+function renderTrends(){
+  renderWeightChart();
+  renderCalorieChart();
+}
+
+function renderWeightChart(){
+  const canvas = document.getElementById('wt-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const empty = document.getElementById('wt-empty');
+  if(weightLog.length === 0){
+    canvas.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  empty.style.display = 'none';
+  const data = [...weightLog].sort((a,b)=>a.date.localeCompare(b.date)).slice(-14);
+  const w = canvas.width = canvas.offsetWidth;
+  const h = canvas.height = canvas.offsetHeight;
+  ctx.clearRect(0,0,w,h);
+  const maxW = Math.max(...data.map(d=>d.weight)) + 2;
+  const minW = Math.max(0, Math.min(...data.map(d=>d.weight)) - 2);
+  ctx.beginPath();
+  ctx.strokeStyle = '#8b5cf6';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const stepX = w / Math.max(1, (data.length - 1));
+  data.forEach((d, i) => {
+    const x = i * stepX;
+    const y = h - ((d.weight - minW) / (maxW - minW) * h);
+    if(i===0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.fillStyle = '#8b5cf6';
+  data.forEach((d, i) => {
+    const x = i * stepX;
+    const y = h - ((d.weight - minW) / (maxW - minW) * h);
+    ctx.beginPath();
+    ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(d.weight, x-6, y-8);
+    ctx.fillStyle = '#8b5cf6';
+  });
+}
+
+function renderCalorieChart(){
+  const canvas = document.getElementById('cal-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const empty = document.getElementById('cal-empty');
+  const dates = [];
+  for(let i=13; i>=0; i--){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().slice(0,10));
+  }
+  const data = dates.map(date => {
+    const entries = mealLog.filter(e=>e.date===date);
+    let kcal = 0;
+    entries.forEach(e=>kcal+=e.kcal);
+    return {date, kcal};
+  });
+  if(data.every(d=>d.kcal===0)){
+    canvas.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  empty.style.display = 'none';
+  const w = canvas.width = canvas.offsetWidth;
+  const h = canvas.height = canvas.offsetHeight;
+  ctx.clearRect(0,0,w,h);
+  const maxK = Math.max(1000, ...data.map(d=>d.kcal)) * 1.1;
+  const barW = (w / 14) * 0.6;
+  const stepX = w / 14;
+  data.forEach((d, i) => {
+    const x = i * stepX + (stepX - barW)/2;
+    const barH = (d.kcal / maxK) * h;
+    const y = h - barH;
+    const grd = ctx.createLinearGradient(0, y, 0, h);
+    grd.addColorStop(0, '#f59e0b');
+    grd.addColorStop(1, 'rgba(245, 158, 11, 0.2)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.moveTo(x, h);
+    ctx.lineTo(x, y + 4);
+    ctx.quadraticCurveTo(x, y, x + 4, y);
+    ctx.lineTo(x + barW - 4, y);
+    ctx.quadraticCurveTo(x + barW, y, x + barW, y + 4);
+    ctx.lineTo(x + barW, h);
+    ctx.fill();
+  });
+}
+
+function saveWeight(){
+  const el = document.getElementById('wt-input');
+  const w = parseFloat(el.value);
+  if(isNaN(w) || w<10 || w>300) { toast('Invalid weight','red'); return; }
+  const t = today();
+  weightLog = weightLog.filter(x => x.date !== t);
+  weightLog.push({date:t, weight:w});
+  saveAll();
+  el.value='';
+  toast('Weight saved: '+w+'kg');
+  renderTrends();
+}
 
 // ── FOOD DB ───────────────────────────────────────────────
 let curDBTab='morning';
@@ -1481,7 +1627,7 @@ window.syncToCloud = null;
     window.syncToCloud = async () => {
       if(isRemoteUpdate) return;
       try {
-        await setDoc(docRef, { db, settings, mealLog, weightLog });
+        await setDoc(docRef, { db, settings, mealLog, weightLog, waterLog });
       } catch (err) {
         console.error('Firebase DB Save error', err);
       }
@@ -1502,11 +1648,13 @@ window.syncToCloud = null;
           if(data.settings) settings = data.settings;
           if(data.mealLog) mealLog = data.mealLog;
           if(data.weightLog) weightLog = data.weightLog;
+          if(data.waterLog) waterLog = data.waterLog;
           
           LSset('nf_db',db);
           LSset('nf_settings',settings);
           LSset('nf_log',mealLog);
           LSset('nf_weight',weightLog);
+          LSset('nf_water',waterLog);
           
           syncBulkUI();
           refreshDash();
