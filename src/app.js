@@ -670,7 +670,7 @@ function saveSettings(){
 // ── AI COACH ──────────────────────────────────────────────
 function renderChatHistory() {
   const history = document.getElementById('chat-history');
-  history.innerHTML = '<div class="chat-msg ai">Hello! I\\'m your NutriFit AI Coach. I have access to your daily macros and goals. How can I help you today?</div>';
+  history.innerHTML = `<div class="chat-msg ai">Hello! I'm your NutriFit AI Coach. I have access to your daily macros and goals. How can I help you today?</div>`;
   chatHistory.forEach(msg => {
     const div = document.createElement('div');
     div.className = msg.role === 'user' ? 'chat-msg user' : 'chat-msg ai';
