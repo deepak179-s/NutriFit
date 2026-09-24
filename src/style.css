@@ -394,14 +394,14 @@
   @media(max-width:700px){
     .ai-layout { flex-direction: column; margin: -16px; position: relative; }
     .chat-sidebar { 
-      position: absolute; left: 0; top: 0; bottom: 0; z-index: 100; 
+      position: fixed; left: 0; top: 0; bottom: 0; z-index: 999; height: 100dvh;
       width: calc(100vw - 56px); max-width: 340px; 
       background: var(--bg); border-right: none; border-radius: 0 24px 24px 0;
       box-shadow: 4px 0 24px rgba(0,0,0,0.15); 
       transform: translateX(0); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-      padding: 20px; opacity: 1; pointer-events: auto;
+      padding: 24px 20px; opacity: 1; pointer-events: auto;
     }
-    .chat-sidebar.collapsed { transform: translateX(-100%); width: calc(100vw - 56px); padding: 20px; opacity: 1; pointer-events: none; }
+    .chat-sidebar.collapsed { transform: translateX(-100%); width: calc(100vw - 56px); padding: 24px 20px; opacity: 1; pointer-events: none; }
     .chat-main { padding: 12px; }
     .chat-input-area { border-radius: 20px; padding: 6px; }
     .gemini-greeting h1 { font-size: 22px; }
