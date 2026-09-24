@@ -1,4 +1,0 @@
-{
-  "buildCommand": "echo \"No build required for Vercel, serving static files.\"",
-  "outputDirectory": "."
-}
