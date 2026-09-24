@@ -14,5 +14,8 @@
   "devDependencies": {
     "firebase": "^12.11.0",
     "vite": "^8.3.0"
+  },
+  "dependencies": {
+    "jsdom": "^30.1.1"
   }
 }

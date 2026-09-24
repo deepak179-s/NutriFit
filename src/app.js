@@ -861,8 +861,8 @@ if(weightLog.length===0){
 // ── CLOUD SYNC LOGIC ──────────────────────────────────────
 window.syncToCloud = null;
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+import { initializeApp } from "firebase/app";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 
   const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
