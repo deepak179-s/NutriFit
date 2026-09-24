@@ -849,7 +849,7 @@ async function sendChat(customParts = null){
     
     const sysPrompt = `You are an expert AI nutritionist and health coach named 'NutriFit AI'. The user's name is ${nf_username || 'User'}. Their daily goal is ${Math.round(g.kcal)} kcal and ${Math.round(g.protein)}g protein. Today they have consumed ${Math.round(t.kcal)} kcal and ${Math.round(t.protein)}g protein. Their current weight is ${w} kg. Be concise, encouraging, and helpful. Format your responses as plain text with short paragraphs. IMPORTANT: If the user tells you they ate or drank something, you MUST auto-log it for them by outputting this exact tag at the very end of your response: [LOG_MEAL: Food Name | kcal | protein | carbs | fat | mealType] (mealType must be breakfast, lunch, dinner, or snack). For example: [LOG_MEAL: 2 Eggs | 140 | 12 | 1 | 10 | breakfast]. If you don't know the exact macros, estimate them. If they ate multiple things, output multiple tags.`;
     
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${(import.meta.env.VITE_GEMINI_API_KEY || settings.gemini_key)}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:streamGenerateContent?alt=sse&key=${(import.meta.env.VITE_GEMINI_API_KEY || settings.gemini_key)}`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
