@@ -679,7 +679,33 @@ function renderChatSidebar() {
   chatSessions.forEach(s => {
     const div = document.createElement('div');
     div.className = 'session-item' + (s.id === currentSessionId ? ' active' : '');
-    div.textContent = s.title;
+    div.style.display = 'flex';
+    div.style.justifyContent = 'space-between';
+    div.style.alignItems = 'center';
+    
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = s.title;
+    titleSpan.style.flex = '1';
+    titleSpan.style.overflow = 'hidden';
+    titleSpan.style.textOverflow = 'ellipsis';
+    
+    const delBtn = document.createElement('button');
+    delBtn.innerHTML = '🗑️';
+    delBtn.style.background = 'transparent';
+    delBtn.style.border = 'none';
+    delBtn.style.cursor = 'pointer';
+    delBtn.style.fontSize = '12px';
+    delBtn.style.opacity = '0.6';
+    delBtn.title = 'Delete Chat';
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      deleteSession(s.id);
+    };
+    delBtn.onmouseover = () => delBtn.style.opacity = '1';
+    delBtn.onmouseout = () => delBtn.style.opacity = '0.6';
+    
+    div.appendChild(titleSpan);
+    div.appendChild(delBtn);
     div.onclick = () => loadSession(s.id);
     list.appendChild(div);
   });
@@ -698,6 +724,24 @@ function newSession() {
   saveAll();
   renderChatSidebar();
   renderChatHistory();
+}
+
+function deleteSession(id) {
+  chatSessions = chatSessions.filter(s => s.id !== id);
+  if (currentSessionId === id) {
+    if (chatSessions.length > 0) {
+      currentSessionId = chatSessions[0].id;
+    } else {
+      currentSessionId = null;
+    }
+  }
+  saveAll();
+  if (!currentSessionId) {
+    newSession(); // Creates a new blank one if all are deleted
+  } else {
+    renderChatSidebar();
+    renderChatHistory();
+  }
 }
 
 function renderChatHistory() {
