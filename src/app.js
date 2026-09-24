@@ -874,8 +874,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebas
     measurementId: "G-226D7JHKSF"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const firestore = getFirestore(app);
+  let app, firestore;
+  try {
+    if (firebaseConfig.apiKey) {
+      app = initializeApp(firebaseConfig);
+      firestore = getFirestore(app);
+    } else {
+      console.warn("Firebase API key missing. Running in local-only mode.");
+    }
+  } catch (e) {
+    console.error("Firebase init error", e);
+  }
 
   let unsubscribe = null;
   let isRemoteUpdate = false;
@@ -900,6 +909,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebas
     const nm = document.getElementById('auth-name').value.trim();
     
     if(!un || !pw) { toast('Please fill username and password', 'red'); return; }
+    if (!firestore) { toast('Cloud sync is unavailable. Check Vercel environment variables.', 'red'); return; }
     
     const userRef = doc(firestore, 'accounts', un);
     const btn = document.getElementById('btn-auth');
@@ -937,6 +947,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebas
 
   function connectCloud() {
     if(!nf_username) return;
+    if(!firestore) return;
     if(unsubscribe) unsubscribe();
     
     const docRef = doc(firestore, 'users', nf_username);
