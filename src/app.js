@@ -756,7 +756,7 @@ async function sendChat(){
     const g = getGoals();
     const w = weightLog.length > 0 ? weightLog[weightLog.length-1].weight : 'unknown';
     
-    const sysPrompt = `You are an expert AI nutritionist and health coach named 'NutriFit AI'. The user's name is ${nf_username || 'User'}. Their daily goal is ${Math.round(g.kcal)} kcal and ${Math.round(g.protein)}g protein. Today they have consumed ${Math.round(t.kcal)} kcal and ${Math.round(t.protein)}g protein. Their current weight is ${w} kg. Be concise, encouraging, and helpful. Format your responses as plain text with short paragraphs.`;
+    const sysPrompt = `You are an expert AI nutritionist and health coach named 'NutriFit AI'. The user's name is ${nf_username || 'User'}. Their daily goal is ${Math.round(g.kcal)} kcal and ${Math.round(g.protein)}g protein. Today they have consumed ${Math.round(t.kcal)} kcal and ${Math.round(t.protein)}g protein. Their current weight is ${w} kg. Be concise, encouraging, and helpful. Format your responses as plain text with short paragraphs. IMPORTANT: If the user tells you they ate or drank something, you MUST auto-log it for them by outputting this exact tag at the very end of your response: [LOG_MEAL: Food Name | kcal | protein | carbs | fat | mealType] (mealType must be breakfast, lunch, dinner, or snack). For example: [LOG_MEAL: 2 Eggs | 140 | 12 | 1 | 10 | breakfast]. If you don't know the exact macros, estimate them. If they ate multiple things, output multiple tags.`;
     
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:streamGenerateContent?alt=sse&key=${(import.meta.env.VITE_GEMINI_API_KEY || settings.gemini_key)}`, {
       method: 'POST',
@@ -781,7 +781,7 @@ async function sendChat(){
       const {done, value} = await reader.read();
       if(done) break;
       const chunk = decoder.decode(value, {stream: true});
-      const lines = chunk.split('\\n');
+      const lines = chunk.split('\n');
       for(const line of lines) {
         if(line.startsWith('data: ')) {
           const dataStr = line.replace('data: ', '').trim();
@@ -790,7 +790,8 @@ async function sendChat(){
               const data = JSON.parse(dataStr);
               if(data.candidates && data.candidates[0].content.parts[0].text) {
                 fullResponse += data.candidates[0].content.parts[0].text;
-                aiDiv.textContent = fullResponse;
+                let displayResponse = fullResponse.replace(/\[LOG_MEAL:.*?\]/gi, '').trim();
+                aiDiv.textContent = displayResponse;
                 historyEl.scrollTop = historyEl.scrollHeight;
               }
             } catch(e) {}
@@ -799,7 +800,34 @@ async function sendChat(){
       }
     }
     
-    session.messages.push({ role: 'model', parts: [{ text: fullResponse }] });
+    const regex = /\[LOG_MEAL:\s*(.*?)\s*\|\s*(\d+\.?\d*)\s*\|\s*(\d+\.?\d*)\s*\|\s*(\d+\.?\d*)\s*\|\s*(\d+\.?\d*)\s*\|\s*([a-z]+)\s*\]/gi;
+    let match;
+    let numLogged = 0;
+    while((match = regex.exec(fullResponse)) !== null) {
+      const [, mName, mKcal, mPro, mCarb, mFat, mType] = match;
+      mealLog.push({
+        date: today(),
+        meal: mType.toLowerCase(),
+        name: mName.trim(),
+        kcal: parseFloat(mKcal),
+        protein: parseFloat(mPro),
+        carbs: parseFloat(mCarb),
+        fat: parseFloat(mFat),
+        type: 'custom'
+      });
+      numLogged++;
+    }
+    
+    if (numLogged > 0) {
+      toast(`Successfully auto-logged ${numLogged} item(s)!`, 'green');
+      if (typeof syncBulkUI === 'function') syncBulkUI();
+      if (typeof refreshDash === 'function') refreshDash();
+      if (typeof renderLogForm === 'function') renderLogForm();
+    }
+    
+    const cleanResponse = fullResponse.replace(/\[LOG_MEAL:.*?\]/gi, '').trim();
+    aiDiv.textContent = cleanResponse;
+    session.messages.push({ role: 'model', parts: [{ text: cleanResponse }] });
     saveAll();
     
   } catch(err){
