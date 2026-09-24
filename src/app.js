@@ -739,24 +739,38 @@ function clearChat() {
   renderChatHistory();
 }
 
-async function sendChat(){
+async function sendChat(customParts = null){
   const input = document.getElementById('chat-input-field');
   const text = input.value.trim();
-  if(!text) return;
+  if(!text && !customParts) return;
   if(!(import.meta.env.VITE_GEMINI_API_KEY || settings.gemini_key)){ toast('Please add Gemini API key in Settings','red'); return; }
   
   const session = chatSessions.find(s => s.id === currentSessionId);
   if (!session) return;
   
   if (session.messages.length === 0) {
-    session.title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+    session.title = text ? text.substring(0, 30) + (text.length > 30 ? '...' : '') : 'Food Photo';
     renderChatSidebar();
   }
   
-  session.messages.push({ role: 'user', parts: [{ text }] });
+  const userParts = customParts || [{ text }];
+  session.messages.push({ role: 'user', parts: userParts });
   saveAll();
-  renderChatHistory();
   input.value = '';
+  
+  const historyEl = document.getElementById('chat-history');
+  const greeting = historyEl.querySelector('.gemini-greeting');
+  if(greeting) greeting.remove();
+
+  const userDiv = document.createElement('div');
+  userDiv.className = 'chat-msg user';
+  if(customParts) {
+    userDiv.innerHTML = '<span style="opacity:0.8;font-size:12px;">📷 Image Uploaded</span><br/>' + (customParts.find(p=>p.text)?.text || '');
+  } else {
+    userDiv.textContent = text;
+  }
+  historyEl.appendChild(userDiv);
+  historyEl.scrollTop = historyEl.scrollHeight;
   
   const historyEl = document.getElementById('chat-history');
   const aiDiv = document.createElement('div');
@@ -853,6 +867,23 @@ async function sendChat(){
     saveAll();
     toast('Failed to reach AI Coach', 'red');
   }
+}
+
+async function handleImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  event.target.value = '';
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64Data = e.target.result.split(',')[1];
+    const parts = [
+      { text: "I just ate the food in this image. Please analyze it, tell me what it is, and provide nutritional estimates. Then auto-log it using the [LOG_MEAL: ...] tag." },
+      { inlineData: { data: base64Data, mimeType: file.type } }
+    ];
+    await sendChat(parts);
+  };
+  reader.readAsDataURL(file);
 }
 
 // ── INIT ──────────────────────────────────────────────────
@@ -1078,3 +1109,4 @@ window.switchSession = switchSession;
 window.deleteSession = deleteSession;
 window.toggleChatSidebar = toggleChatSidebar;
 window.clearChat = clearChat;
+window.handleImageUpload = handleImageUpload;
