@@ -702,16 +702,33 @@ function newSession() {
 
 function renderChatHistory() {
   const history = document.getElementById('chat-history');
-  history.innerHTML = `<div class="chat-msg ai">Hello! I'm your NutriFit AI Coach. I have access to your daily macros and goals. How can I help you today?</div>`;
   const session = chatSessions.find(s => s.id === currentSessionId);
-  if (session && session.messages) {
-    session.messages.forEach(msg => {
-      const div = document.createElement('div');
-      div.className = msg.role === 'user' ? 'chat-msg user' : 'chat-msg ai';
-      div.textContent = msg.parts[0].text;
-      history.appendChild(div);
-    });
+  if (!session || !session.messages || session.messages.length === 0) {
+    history.innerHTML = `
+      <div class="gemini-greeting">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L14.5 10.5L23 13L14.5 15.5L12 24L9.5 15.5L1 13L9.5 10.5L12 2Z" fill="url(#grad)" />
+          <defs>
+            <linearGradient id="grad" x1="1" y1="2" x2="23" y2="24" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#6366f1"/>
+              <stop offset="0.5" stop-color="#a855f7"/>
+              <stop offset="1" stop-color="#ec4899"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <h1>Hi ${nf_username || 'there'},<br>What's on your mind?</h1>
+      </div>
+    `;
+    return;
   }
+
+  history.innerHTML = '';
+  session.messages.forEach(msg => {
+    const div = document.createElement('div');
+    div.className = msg.role === 'user' ? 'chat-msg user' : 'chat-msg ai';
+    div.textContent = msg.parts[0].text;
+    history.appendChild(div);
+  });
   history.scrollTop = history.scrollHeight;
 }
 
@@ -1056,3 +1073,8 @@ window.saveSettings = saveSettings;
 window.sendChat = sendChat;
 window.finishAuth = finishAuth;
 window.connectCloud = connectCloud;
+window.newSession = newSession;
+window.switchSession = switchSession;
+window.deleteSession = deleteSession;
+window.toggleChatSidebar = toggleChatSidebar;
+window.clearChat = clearChat;
