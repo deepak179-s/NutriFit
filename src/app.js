@@ -734,6 +734,16 @@ function loadSession(id) {
   renderChatHistory();
 }
 
+function parseMarkdown(text) {
+  if (!text) return '';
+  let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  html = html.replace(/\n/g, '<br>');
+  html = html.replace(/(?:<br>|^)\* (.*?)(?=(<br>|$))/g, '<br>• $1');
+  return html;
+}
+
 function newSession() {
   if (chatSessions.length > 0) {
     const currentSession = chatSessions.find(s => s.id === currentSessionId);
@@ -794,7 +804,18 @@ function renderChatHistory() {
   session.messages.forEach(msg => {
     const div = document.createElement('div');
     div.className = msg.role === 'user' ? 'chat-msg user' : 'chat-msg ai';
-    div.textContent = msg.parts[0].text;
+    
+    if (msg.parts && msg.parts.length > 0) {
+      const textPart = msg.parts.find(p => p.text);
+      if (textPart) {
+        div.innerHTML = msg.role === 'ai' || msg.role === 'model' ? parseMarkdown(textPart.text) : textPart.text.replace(/</g, '&lt;');
+      } else {
+        div.innerHTML = '<span style="opacity:0.8;font-size:12px;">📷 Image</span>';
+      }
+    } else {
+      div.innerHTML = msg.role === 'ai' || msg.role === 'model' ? parseMarkdown(msg.text || '') : (msg.text || '').replace(/</g, '&lt;');
+    }
+    
     history.appendChild(div);
   });
   history.scrollTop = history.scrollHeight;
@@ -889,7 +910,7 @@ async function sendChat(customParts = null){
               if(data.candidates && data.candidates[0].content.parts[0].text) {
                 fullResponse += data.candidates[0].content.parts[0].text;
                 let displayResponse = fullResponse.replace(/\[LOG_MEAL:.*?\]/gi, '').trim();
-                aiDiv.textContent = displayResponse;
+                aiDiv.innerHTML = parseMarkdown(displayResponse);
                 historyEl.scrollTop = historyEl.scrollHeight;
               }
             } catch(e) {}
@@ -924,7 +945,7 @@ async function sendChat(customParts = null){
     }
     
     const cleanResponse = fullResponse.replace(/\[LOG_MEAL:.*?\]/gi, '').trim();
-    aiDiv.textContent = cleanResponse;
+    aiDiv.innerHTML = parseMarkdown(cleanResponse);
     session.messages.push({ role: 'model', parts: [{ text: cleanResponse }] });
     saveAll();
     
