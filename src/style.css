@@ -354,7 +354,7 @@
   .ai-layout { display: flex; height: 100%; overflow: hidden; margin: -24px -28px; position: relative; }
   .chat-sidebar {
     width: 260px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border);
-    padding: 20px; display: flex; flex-direction: column; transition: width 0.3s, padding 0.3s, opacity 0.3s, transform 0.3s;
+    padding: 20px; display: flex; flex-direction: column; transition: width 0.3s, padding 0.3s, opacity 0.3s;
     overflow-y: auto; z-index: 10; opacity: 1;
   }
   .chat-sidebar.collapsed { width: 0; padding: 0; opacity: 0; border-right: none; overflow: hidden; pointer-events: none; }
@@ -392,9 +392,16 @@
   .gemini-greeting h1 { font-size: 28px; font-weight: 500; background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   
   @media(max-width:700px){
-    .ai-layout { flex-direction: column; margin: -16px; }
-    .chat-sidebar { position: absolute; left: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(0); transition: transform 0.3s; border-right: 1px solid var(--border); margin-left: 0; width: 260px; box-shadow: 4px 0 24px rgba(0,0,0,0.5); opacity: 1; padding: 20px; }
-    .chat-sidebar.collapsed { transform: translateX(-100%); margin-left: 0; width: 260px; padding: 20px; opacity: 1; pointer-events: auto; }
+    .ai-layout { flex-direction: column; margin: -16px; position: relative; }
+    .chat-sidebar { 
+      position: absolute; left: 0; top: 0; bottom: 0; z-index: 100; 
+      width: calc(100vw - 56px); max-width: 340px; 
+      background: var(--bg); border-right: none; border-radius: 0 24px 24px 0;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.15); 
+      transform: translateX(0); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+      padding: 20px; opacity: 1; pointer-events: auto;
+    }
+    .chat-sidebar.collapsed { transform: translateX(-100%); width: calc(100vw - 56px); padding: 20px; opacity: 1; pointer-events: none; }
     .chat-main { padding: 12px; }
     .chat-input-area { border-radius: 20px; padding: 6px; }
     .gemini-greeting h1 { font-size: 22px; }
