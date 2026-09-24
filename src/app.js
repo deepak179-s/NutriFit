@@ -930,21 +930,31 @@ async function sendChat(customParts = null){
 }
 
 async function handleImageUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  toast('Processing image...', 'blue');
-  event.target.value = '';
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const base64Data = e.target.result.split(',')[1];
-    const parts = [
-      { text: "I just ate the food in this image. Please analyze it, tell me what it is, and provide nutritional estimates. Then auto-log it using the [LOG_MEAL: ...] tag." },
-      { inlineData: { data: base64Data, mimeType: file.type } }
-    ];
-    await sendChat(parts);
-  };
-  reader.readAsDataURL(file);
+  try {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    toast('Processing image...', 'blue');
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const base64Data = e.target.result.split(',')[1];
+        const parts = [
+          { text: "I just ate the food in this image. Please analyze it, tell me what it is, and provide nutritional estimates. Then auto-log it using the [LOG_MEAL: ...] tag." },
+          { inlineData: { data: base64Data, mimeType: file.type } }
+        ];
+        await sendChat(parts);
+      } catch (err) {
+        toast('Upload failed: ' + err.message, 'red');
+      } finally {
+        event.target.value = ''; // Reset after upload
+      }
+    };
+    reader.onerror = () => toast('Error reading file', 'red');
+    reader.readAsDataURL(file);
+  } catch(err) {
+    toast('Camera/File error: ' + err.message, 'red');
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────────
@@ -955,6 +965,12 @@ document.getElementById('log-meal-type').value=autoMealType();
 refreshDash();
 renderLogForm();
 renderCustomRemaining();
+
+// Bind image upload dynamically
+const imgInput = document.getElementById('chat-img-upload');
+if(imgInput) {
+  imgInput.addEventListener('change', handleImageUpload);
+}
 
 // pre-populate weight log from bundled CSV data
 if(weightLog.length===0){
