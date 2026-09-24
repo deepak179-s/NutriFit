@@ -735,6 +735,13 @@ function loadSession(id) {
 }
 
 function newSession() {
+  if (chatSessions.length > 0) {
+    const currentSession = chatSessions.find(s => s.id === currentSessionId);
+    if (currentSession && currentSession.messages.length === 0) {
+      return; // Already on an empty chat, do nothing
+    }
+  }
+
   const id = Date.now();
   chatSessions.unshift({ id, title: 'New Chat', messages: [] });
   currentSessionId = id;
