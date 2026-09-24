@@ -354,10 +354,10 @@
   .ai-layout { display: flex; height: 100%; overflow: hidden; margin: -24px -28px; position: relative; }
   .chat-sidebar {
     width: 260px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border);
-    padding: 20px; display: flex; flex-direction: column; transition: transform 0.3s, margin-left 0.3s;
-    overflow-y: auto; z-index: 10;
+    padding: 20px; display: flex; flex-direction: column; transition: width 0.3s, padding 0.3s, opacity 0.3s, transform 0.3s;
+    overflow-y: auto; z-index: 10; opacity: 1;
   }
-  .chat-sidebar.collapsed { margin-left: -260px; }
+  .chat-sidebar.collapsed { width: 0; padding: 0; opacity: 0; border-right: none; overflow: hidden; pointer-events: none; }
   .session-list { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; margin-right: -8px; padding-right: 8px;}
   .session-item {
     padding: 10px 12px; font-size: 13px; color: var(--text2); border-radius: 12px; cursor: pointer;
@@ -393,8 +393,8 @@
   
   @media(max-width:700px){
     .ai-layout { flex-direction: column; margin: -16px; }
-    .chat-sidebar { position: absolute; left: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(0); transition: transform 0.3s; border-right: 1px solid var(--border); margin-left: 0; width: 260px; box-shadow: 4px 0 24px rgba(0,0,0,0.5); }
-    .chat-sidebar.collapsed { transform: translateX(-100%); margin-left: 0; }
+    .chat-sidebar { position: absolute; left: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(0); transition: transform 0.3s; border-right: 1px solid var(--border); margin-left: 0; width: 260px; box-shadow: 4px 0 24px rgba(0,0,0,0.5); opacity: 1; padding: 20px; }
+    .chat-sidebar.collapsed { transform: translateX(-100%); margin-left: 0; width: 260px; padding: 20px; opacity: 1; pointer-events: auto; }
     .chat-main { padding: 12px; }
     .chat-input-area { border-radius: 20px; padding: 6px; }
     .gemini-greeting h1 { font-size: 22px; }
