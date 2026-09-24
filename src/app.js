@@ -47,13 +47,23 @@ let chatSessions = LS('nf_sessions', [{id: Date.now(), title: 'New Chat', messag
 let currentSessionId = chatSessions.length > 0 ? chatSessions[0].id : Date.now();
 if (chatSessions.length === 0) chatSessions.push({id: currentSessionId, title: 'New Chat', messages: []});
 
+function getSafeSessions() {
+  return chatSessions.map(s => ({
+    ...s,
+    messages: s.messages.map(m => ({
+      ...m,
+      parts: m.parts.map(p => p.inlineData ? { text: '📷 [Image attached]' } : p)
+    }))
+  }));
+}
+
 function saveAll(){
   LSset('nf_db',db);
   LSset('nf_settings',settings);
   LSset('nf_log',mealLog);
   LSset('nf_weight',weightLog);
   LSset('nf_water',waterLog);
-  LSset('nf_sessions',chatSessions);
+  LSset('nf_sessions',getSafeSessions());
   if(window.syncToCloud) window.syncToCloud();
 }
 
@@ -1054,7 +1064,7 @@ import { initializeApp } from "firebase/app";
     window.syncToCloud = async () => {
       if(isRemoteUpdate) return;
       try {
-        await setDoc(docRef, { db, settings, mealLog, weightLog, waterLog, chatSessions });
+        await setDoc(docRef, { db, settings, mealLog, weightLog, waterLog, chatSessions: getSafeSessions() });
       } catch (err) {
         console.error('Firebase DB Save error', err);
       }
