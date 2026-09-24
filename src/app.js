@@ -772,7 +772,6 @@ async function sendChat(customParts = null){
   historyEl.appendChild(userDiv);
   historyEl.scrollTop = historyEl.scrollHeight;
   
-  const historyEl = document.getElementById('chat-history');
   const aiDiv = document.createElement('div');
   aiDiv.className = 'chat-msg ai';
   aiDiv.textContent = '';
