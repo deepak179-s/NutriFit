@@ -93,6 +93,13 @@ function gotoPage(name,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el)el.classList.add('active');
   document.getElementById('page-title').textContent=PAGE_TITLES[name]||name;
+  
+  if(name === 'ai') {
+    document.getElementById('content').style.overflowY = 'hidden';
+  } else {
+    document.getElementById('content').style.overflowY = 'auto';
+  }
+
   if(name==='dash')refreshDash();
   if(name==='log')renderLogForm();
   if(name==='weight')renderTrends();
