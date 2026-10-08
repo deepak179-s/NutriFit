@@ -122,6 +122,11 @@ function gotoPage(name,el){
   
   if(name === 'ai') {
     document.getElementById('content').style.overflowY = 'hidden';
+    if(typeof updateVisualViewport === 'function') setTimeout(updateVisualViewport, 50);
+    setTimeout(() => {
+      const h = document.getElementById('chat-history');
+      if (h) h.scrollTop = h.scrollHeight;
+    }, 60);
   } else {
     document.getElementById('content').style.overflowY = 'auto';
   }
@@ -962,6 +967,7 @@ async function sendChat(customParts = null){
   session.messages.push({ role: 'user', parts: userParts });
   saveAll();
   input.value = '';
+  input.style.height = 'auto';
   
   const historyEl = document.getElementById('chat-history');
   const greeting = historyEl.querySelector('.gemini-greeting');
@@ -1028,7 +1034,9 @@ async function sendChat(customParts = null){
           if(textChunk) {
             fullResponse+=textChunk;
             aiDiv.innerHTML=parseMarkdown(fullResponse.replace(/\[LOG_MEAL:.*?\]/gi,'').trim());
-            historyEl.scrollTop=historyEl.scrollHeight;
+            if ((historyEl.scrollHeight - historyEl.scrollTop - historyEl.clientHeight) <= 80) {
+              historyEl.scrollTop=historyEl.scrollHeight;
+            }
           }
         } catch {
           // Ignore non-JSON keep-alive lines while preserving subsequent events.
@@ -1357,15 +1365,49 @@ window.toggleChatSidebar = toggleChatSidebar;
 window.clearChat = clearChat;
 window.handleImageUpload = handleImageUpload;
 
-// Handle mobile keyboard open/close
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => {
-    const historyEl = document.getElementById('chat-history');
-    if (historyEl) historyEl.scrollTop = historyEl.scrollHeight;
-  });
-} else {
-  window.addEventListener('resize', () => {
-    const historyEl = document.getElementById('chat-history');
-    if (historyEl) historyEl.scrollTop = historyEl.scrollHeight;
-  });
+// Smart Keyboard & Viewport Handling for ChatGPT-like interaction
+function updateVisualViewport() {
+  const pageAi = document.getElementById('page-ai');
+  const historyEl = document.getElementById('chat-history');
+  
+  if (!pageAi || !historyEl) return;
+  
+  if (window.innerWidth <= 720 && pageAi.classList.contains('active')) {
+    if (window.visualViewport) {
+      // 1. Check if user is currently at the bottom (within a 25px threshold)
+      const isAtBottom = (historyEl.scrollHeight - historyEl.scrollTop - historyEl.clientHeight) <= 25;
+      
+      // 2. Lock the container to the visual viewport exactly
+      pageAi.style.height = `${window.visualViewport.height}px`;
+      pageAi.style.top = `${window.visualViewport.offsetTop}px`;
+      
+      // Force a synchronous reflow so that scrollHeight reflects the new height
+      void historyEl.offsetHeight;
+      
+      // 3. If they were at the bottom, strictly keep them at the bottom
+      if (isAtBottom) {
+        historyEl.scrollTop = historyEl.scrollHeight;
+      }
+      
+      // Detect keyboard open for styling
+      if (window.visualViewport.height < window.screen.availHeight * 0.8) {
+        document.body.classList.add('keyboard-open');
+      } else {
+        document.body.classList.remove('keyboard-open');
+      }
+    }
+  } else {
+    // Reset styles when not on AI page or on desktop
+    pageAi.style.height = '';
+    pageAi.style.top = '';
+    document.body.classList.remove('keyboard-open');
+  }
 }
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', updateVisualViewport);
+  window.visualViewport.addEventListener('scroll', updateVisualViewport);
+}
+window.addEventListener('resize', updateVisualViewport);
+// Run once on load
+setTimeout(updateVisualViewport, 100);

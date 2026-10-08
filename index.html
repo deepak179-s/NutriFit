@@ -452,7 +452,7 @@
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                 </label>
                 <input type="file" id="chat-img-upload" accept="image/*" style="display:none">
-                <input type="text" class="chat-input" id="chat-input-field" placeholder="Ask about diet or upload food photo..." onkeydown="if(event.key==='Enter') sendChat()">
+                <textarea class="chat-input" id="chat-input-field" placeholder="Ask about diet or upload food photo..." rows="1" oninput="this.style.height='auto';this.style.height=(this.scrollHeight<120?this.scrollHeight:120)+'px';" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); sendChat(); }"></textarea>
                 <button class="chat-send-btn" id="chat-send-btn" onclick="sendChat()" aria-label="Send message">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                 </button>
