@@ -213,6 +213,10 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
 .toast-dot.red{background:var(--red)}
 .toast-dot.blue{background:var(--accent)}
 
+#mobile-ai-fab{display:none;position:fixed;z-index:200;right:20px;bottom:calc(100px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg, var(--accent), #db2777);color:#fff;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(89,102,232,.35);cursor:pointer;transition:transform 0.2s ease}
+#mobile-ai-fab:active{transform:scale(0.92)}
+#mobile-ai-fab svg{width:26px;height:26px}
+
 /* Coach */
 #page-ai{overflow:hidden}
 .ai-layout{display:flex;min-height:0;flex:1;overflow:hidden;border:1px solid var(--border);border-radius:24px;background:var(--surface);box-shadow:var(--shadow)}
@@ -256,7 +260,9 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
   #app{display:block;overflow:hidden}
   #sidebar{position:fixed;z-index:100;right:12px;bottom:max(10px,env(safe-area-inset-bottom));left:12px;width:auto;height:72px;min-height:72px;padding:5px;border:1px solid var(--border);border-radius:26px;background:var(--surface);box-shadow:0 12px 30px rgba(23,24,29,.13)}
   .sidebar-top,.sidebar-bottom,.nav-label{display:none}
-  .nav-section{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;width:100%;height:100%}
+  .nav-section{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;width:100%;height:100%}
+  #nav-item-ai{display:none!important}
+  #mobile-ai-fab{display:flex}
   #sidebar .nav-item{display:flex;min-width:0;min-height:0;height:60px;padding:5px 1px;justify-content:center;gap:3px;border-radius:19px;flex-direction:column;text-align:center;font-size:9px;font-weight:700;color:var(--text3)}
   #sidebar .nav-item .icon{width:19px;height:19px;flex:0 0 19px}
   #sidebar .nav-item span{overflow:hidden;max-width:100%;line-height:1.08;text-overflow:ellipsis;white-space:nowrap}
@@ -267,9 +273,16 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
   #content{padding:2px 16px 20px;background:var(--bg1)}
   #content::after{content:"";display:block;min-height:calc(120px + env(safe-area-inset-bottom));flex-shrink:0}
   #content:has(#page-ai.active)::after{display:none}
-  #page-ai.active{padding-bottom:calc(85px + env(safe-area-inset-bottom))}
   body:has(input:focus, select:focus) #sidebar{display:none}
-  body:has(input:focus, select:focus) #page-ai.active{padding-bottom:10px}
+  
+  /* AI Coach Full Screen Mobile */
+  body:has(#page-ai.active) #sidebar{display:none}
+  body:has(#page-ai.active) #topbar{display:none}
+  body:has(#page-ai.active) #mobile-ai-fab{display:none}
+  #page-ai.active{padding-bottom:env(safe-area-inset-bottom);padding-top:env(safe-area-inset-top)}
+  body:has(#page-ai.active) #content{padding:0}
+  
+  .mobile-back-btn{display:inline-flex!important}
   .page{max-width:none}
   .grid2,.grid3,.grid4{grid-template-columns:1fr!important;gap:14px!important}
   #page-dash>.grid2:first-child{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}

@@ -52,7 +52,7 @@
         <svg class="icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 2v12M3 6h10M2 10h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         <span>Log Meal</span>
       </div>
-      <div class="nav-item" onclick="gotoPage('ai',this)">
+      <div class="nav-item" id="nav-item-ai" onclick="gotoPage('ai',this)">
         <svg class="icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 2L14 5V11L8 14L2 11V5L8 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
         <span>AI Coach</span>
       </div>
@@ -431,6 +431,9 @@
           <div class="chat-main">
             <div class="chat-header" style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px;">
               <div style="display:flex; align-items:center; gap:12px;">
+                <button class="icon-btn mobile-back-btn" onclick="gotoPage('dash')" style="display:none; border:none; background:transparent; padding:6px; cursor:pointer;" title="Back">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
                 <button class="icon-btn" onclick="document.getElementById('chat-sidebar').classList.remove('collapsed'); document.getElementById('chat-sidebar-backdrop').classList.add('active');" title="Toggle Sidebar" style="border:none; background:transparent; padding:6px; cursor:pointer;">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
@@ -548,6 +551,11 @@
 
     </div><!-- /content -->
   </div>
+</div>
+
+<!-- MOBILE AI FAB -->
+<div id="mobile-ai-fab" onclick="gotoPage('ai')">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 12 2.1 12"></path><path d="M12 12 19 4.9"></path></svg>
 </div>
 
 <!-- TOAST -->
