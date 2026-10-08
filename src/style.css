@@ -279,10 +279,9 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
     position: fixed !important;
     inset: 0;
     height: 100dvh;
-    z-index: 90;
+    z-index: 999;
     margin: 0 !important;
-    /* 72px sidebar + 10px spacing = 82px */
-    padding: env(safe-area-inset-top) 0 calc(82px + env(safe-area-inset-bottom)) 0 !important;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0 !important;
     background: var(--bg1);
     box-sizing: border-box;
   }
@@ -292,6 +291,7 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
   body.keyboard-open #sidebar {
     display: none !important;
   }
+  body:has(#page-ai.active) #sidebar,
   body:has(#page-ai.active) #topbar,
   body:has(#page-ai.active) #mobile-ai-fab {
     display: none !important;
