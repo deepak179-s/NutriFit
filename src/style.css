@@ -270,8 +270,8 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
   #main{width:100%;height:100%;min-height:0}
   #topbar{min-height:98px;padding:calc(17px + env(safe-area-inset-top)) 20px 14px;background:var(--bg1)}
   .page-title{font-size:31px;letter-spacing:-1.35px}
-  #content{padding:2px 16px 20px;background:var(--bg1)}
-  #content::after{content:"";display:block;min-height:calc(120px + env(safe-area-inset-bottom));flex-shrink:0}
+  #content{padding:2px 16px calc(110px + env(safe-area-inset-bottom));background:var(--bg1)}
+  body:has(input:focus, select:focus) #content{padding-bottom: calc(20px + env(safe-area-inset-bottom));}
   body:has(input:focus, select:focus) #sidebar{display:none}
   
   /* AI Coach Full Screen Mobile */
@@ -279,13 +279,19 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
     position: fixed !important;
     inset: 0;
     height: 100dvh;
-    z-index: 999;
+    z-index: 90;
     margin: 0 !important;
-    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0 !important;
+    /* 72px sidebar + 10px spacing = 82px */
+    padding: env(safe-area-inset-top) 0 calc(82px + env(safe-area-inset-bottom)) 0 !important;
     background: var(--bg1);
     box-sizing: border-box;
   }
-  body:has(#page-ai.active) #sidebar,
+  body.keyboard-open #page-ai.active {
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+  body.keyboard-open #sidebar {
+    display: none !important;
+  }
   body:has(#page-ai.active) #topbar,
   body:has(#page-ai.active) #mobile-ai-fab {
     display: none !important;
