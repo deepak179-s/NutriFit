@@ -1,11 +1,8 @@
-const CACHE_NAME = 'nutrifit-cache-v1';
+const CACHE_NAME = 'nutrifit-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/src/app.js',
-  '/src/style.css',
-  '/nutrifit_icon.png',
-  '/favicon.jpg'
+  '/nutrifit_icon.png'
 ];
 
 self.addEventListener('install', event => {

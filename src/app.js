@@ -67,7 +67,10 @@ function saveAll(){
   if(window.syncToCloud) window.syncToCloud();
 }
 
-function today(){return new Date().toISOString().slice(0,10)}
+function today(){
+  const now=new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+}
 
 function getGoals(){
   const k=settings.goal_kcal, p=settings.goal_protein;
@@ -98,10 +101,13 @@ function toast(msg,type='green'){
 // ── NAVIGATION ────────────────────────────────────────────
 const PAGE_TITLES={dash:'Dashboard',log:'Log Meal',custom:'Quick Add',weight:'Trends',foods:'Food Database',settings:'Settings',ai:'AI Coach'};
 function gotoPage(name,el){
+  const page=document.getElementById('page-'+name);
+  if(!page)return;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
+  page.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  if(el)el.classList.add('active');
+  const activeItem=el||document.querySelector(`.nav-item[onclick*="'${name}'"]`);
+  if(activeItem)activeItem.classList.add('active');
   document.getElementById('page-title').textContent=PAGE_TITLES[name]||name;
   
   if(name === 'ai') {
@@ -222,7 +228,20 @@ function refreshDash(){
     empty.style.display='none';
     todayEntries.forEach((e,i)=>{
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${e.name}</td><td><span class="meal-badge ${e.meal}">${e.meal}</span></td><td>${Math.round(e.kcal)}</td><td>${Math.round(e.protein)}</td><td>${Math.round(e.carbs)}</td><td>${Math.round(e.fat)}</td>`;
+      const nameCell=document.createElement('td');
+      nameCell.textContent=e.name;
+      const mealCell=document.createElement('td');
+      const badge=document.createElement('span');
+      const mealClass=['morning','lunch','evening','dinner','custom'].includes(e.meal)?e.meal:'custom';
+      badge.className=`meal-badge ${mealClass}`;
+      badge.textContent=e.meal;
+      mealCell.appendChild(badge);
+      tr.append(nameCell,mealCell);
+      [e.kcal,e.protein,e.carbs,e.fat].forEach(value=>{
+        const cell=document.createElement('td');
+        cell.textContent=String(Math.round(Number(value)||0));
+        tr.appendChild(cell);
+      });
       tbody.appendChild(tr);
     });
   }
@@ -278,25 +297,43 @@ function renderLogForm(){
   const names=Object.keys(foods);
   if(names.length===0){
     container.innerHTML='<div class="empty"><div class="empty-text">No foods in this category</div></div>';
+    updateLogPreview();
     return;
   }
-  names.forEach(name=>{
+  names.forEach((name,index)=>{
     const f=foods[name];
     const unit=f.serving===1?'unit':(f.serving<=10?'units':'g/ml');
     const div=document.createElement('div');
     div.className='food-row';
-    div.innerHTML=`
-      <div class="food-info">
-        <div class="food-name">${name}</div>
-        <div class="food-macro">${f.kcal}kcal · ${f.protein}g P · ${f.carbs}g C · ${f.fat}g F per ${f.serving}${unit}</div>
-      </div>
-      <div class="food-qty">
-        <input class="qty-input" type="number" min="0" step="${f.serving===1?1:10}" placeholder="0" id="qty_${name.replace(/\s+/g,'_')}" oninput="updateLogPreview()">
-        <span class="qty-unit">${unit}</span>
-      </div>
-    `;
+    const info=document.createElement('div');
+    info.className='food-info';
+    const title=document.createElement('div');
+    title.className='food-name';
+    title.textContent=name;
+    const macros=document.createElement('div');
+    macros.className='food-macro';
+    macros.textContent=`${f.kcal}kcal · ${f.protein}g P · ${f.carbs}g C · ${f.fat}g F per ${f.serving}${unit}`;
+    info.append(title,macros);
+    const qty=document.createElement('div');
+    qty.className='food-qty';
+    const input=document.createElement('input');
+    input.className='qty-input';
+    input.type='number';
+    input.min='0';
+    input.step=String(f.serving===1?1:10);
+    input.placeholder='0';
+    input.id=`qty_${index}`;
+    input.dataset.foodName=name;
+    input.setAttribute('aria-label',`Amount of ${name}`);
+    input.addEventListener('input',updateLogPreview);
+    const unitLabel=document.createElement('span');
+    unitLabel.className='qty-unit';
+    unitLabel.textContent=unit;
+    qty.append(input,unitLabel);
+    div.append(info,qty);
     container.appendChild(div);
   });
+  updateLogPreview();
 }
 
 function updateLogPreview(){
@@ -304,7 +341,7 @@ function updateLogPreview(){
   const foods=db[meal]||{};
   let cal=0,pro=0,carb=0,fat=0;
   for(const name in foods){
-    const el=document.getElementById('qty_'+name.replace(/\s+/g,'_'));
+    const el=[...document.querySelectorAll('.qty-input')].find(input=>input.dataset.foodName===name);
     if(!el)continue;
     const qty=parseFloat(el.value)||0;
     if(qty>0){
@@ -333,7 +370,7 @@ function saveLogMeal(){
   let cal=0,pro=0,carb=0,fat=0;
   const parts=[];
   for(const name in foods){
-    const el=document.getElementById('qty_'+name.replace(/\s+/g,'_'));
+    const el=[...document.querySelectorAll('.qty-input')].find(input=>input.dataset.foodName===name);
     if(!el)continue;
     const qty=parseFloat(el.value)||0;
     if(qty>0){
@@ -478,6 +515,7 @@ function saveCustomMeal(){
   const carb=parseFloat(document.getElementById('ca-carbs').value)||0;
   const fat=parseFloat(document.getElementById('ca-fat').value)||0;
   if(!name){toast('Enter a food name','red');return;}
+  if([kcal,pro,carb,fat].some(value=>!Number.isFinite(value)||value<0)){toast('Nutrition values must be zero or greater','red');return;}
   if(kcal===0&&pro===0&&carb===0&&fat===0){toast('Enter at least one macro value','red');return;}
   mealLog.push({date:today(),meal,name,kcal,protein:pro,carbs:carb,fat,type:'custom'});
   if(document.getElementById('ca-save-db').checked){
@@ -503,8 +541,24 @@ function saveCustomMeal(){
 
 // ── TRENDS ────────────────────────────────────────────────
 function renderTrends(){
+  renderTrendAverages();
   renderWeightChart();
   renderCalorieChart();
+}
+
+function renderTrendAverages(){
+  const dates=[];
+  for(let i=6;i>=0;i--){
+    const date=new Date();
+    date.setDate(date.getDate()-i);
+    dates.push(`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`);
+  }
+  const days=dates.map(date=>mealLog.filter(entry=>entry.date===date));
+  const hasEntries=days.some(entries=>entries.length);
+  const calories=days.reduce((sum,entries)=>sum+entries.reduce((daySum,entry)=>daySum+(Number(entry.kcal)||0),0),0);
+  const protein=days.reduce((sum,entries)=>sum+entries.reduce((daySum,entry)=>daySum+(Number(entry.protein)||0),0),0);
+  document.getElementById('trend-avg-cal').textContent=hasEntries?`${Math.round(calories/7)} kcal`:'—';
+  document.getElementById('trend-avg-pro').textContent=hasEntries?`${Math.round(protein/7)} g`:'—';
 }
 
 function renderWeightChart(){
@@ -520,8 +574,12 @@ function renderWeightChart(){
   canvas.style.display = 'block';
   empty.style.display = 'none';
   const data = [...weightLog].sort((a,b)=>a.date.localeCompare(b.date)).slice(-14);
-  const w = canvas.width = canvas.offsetWidth;
-  const h = canvas.height = canvas.offsetHeight;
+  const dpr=window.devicePixelRatio||1;
+  const w=canvas.offsetWidth;
+  const h=canvas.offsetHeight;
+  canvas.width=Math.round(w*dpr);
+  canvas.height=Math.round(h*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
   const maxW = Math.max(...data.map(d=>d.weight)) + 2;
   const minW = Math.max(0, Math.min(...data.map(d=>d.weight)) - 2);
@@ -561,7 +619,7 @@ function renderCalorieChart(){
   for(let i=13; i>=0; i--){
     const d = new Date();
     d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().slice(0,10));
+    dates.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
   }
   const data = dates.map(date => {
     const entries = mealLog.filter(e=>e.date===date);
@@ -576,8 +634,12 @@ function renderCalorieChart(){
   }
   canvas.style.display = 'block';
   empty.style.display = 'none';
-  const w = canvas.width = canvas.offsetWidth;
-  const h = canvas.height = canvas.offsetHeight;
+  const dpr=window.devicePixelRatio||1;
+  const w=canvas.offsetWidth;
+  const h=canvas.offsetHeight;
+  canvas.width=Math.round(w*dpr);
+  canvas.height=Math.round(h*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
   const maxK = Math.max(1000, ...data.map(d=>d.kcal)) * 1.1;
   const barW = (w / 14) * 0.6;
@@ -633,13 +695,20 @@ function renderDBList(cat){
     const f=foods[name];
     const row=document.createElement('div');
     row.className='food-row';
-    row.innerHTML=`
-      <div class="food-info">
-        <div class="food-name">${name}</div>
-        <div class="food-macro">per ${f.serving}g/unit — ${f.kcal}kcal · ${f.protein}g P · ${f.carbs}g C · ${f.fat}g F</div>
-      </div>
-      <button class="btn btn-danger btn-sm" onclick="deleteFood('${cat}','${name}')">Remove</button>
-    `;
+    const info=document.createElement('div');
+    info.className='food-info';
+    const title=document.createElement('div');
+    title.className='food-name';
+    title.textContent=name;
+    const macros=document.createElement('div');
+    macros.className='food-macro';
+    macros.textContent=`per ${f.serving}g/unit — ${f.kcal}kcal · ${f.protein}g P · ${f.carbs}g C · ${f.fat}g F`;
+    info.append(title,macros);
+    const remove=document.createElement('button');
+    remove.className='btn btn-danger btn-sm';
+    remove.textContent='Remove';
+    remove.addEventListener('click',()=>deleteFood(cat,name));
+    row.append(info,remove);
     list.appendChild(row);
   });
 }
@@ -653,6 +722,7 @@ function saveFoodDB(){
   const carbs=parseFloat(document.getElementById('db-carbs').value)||0;
   const fat=parseFloat(document.getElementById('db-fat').value)||0;
   if(!name){toast('Enter a food name','red');return;}
+  if(!Number.isFinite(srv)||srv<=0||[kcal,pro,carbs,fat].some(v=>!Number.isFinite(v)||v<0)){toast('Enter valid, non-negative nutrition values','red');return;}
   if(!db[meal])db[meal]={};
   db[meal][name]={serving:srv,kcal,protein:pro,carbs,fat};
   saveAll();
@@ -673,17 +743,24 @@ function initSettings(){
   document.getElementById('set-kcal').value=settings.goal_kcal;
   document.getElementById('set-pro').value=settings.goal_protein;
   document.getElementById('account-name').textContent = 'Logged in as ' + nf_username;
+  document.getElementById('set-gemini-key').value=settings.gemini_key||'';
   syncBulkUI();
 }
 
 function saveSettings(){
   const k=parseFloat(document.getElementById('set-kcal').value);
   const p=parseFloat(document.getElementById('set-pro').value);
-  if(isNaN(k)||isNaN(p)||k<500||p<10){toast('Invalid values','red');return;}
+  if(!Number.isFinite(k)||!Number.isFinite(p)||k<500||k>10000||p<10||p>1000){toast('Use a calorie goal from 500–10,000 and protein from 10–1,000 g','red');return;}
   settings.goal_kcal=k;settings.goal_protein=p;
   saveAll();
   refreshDash();
   toast('Settings saved');
+}
+
+function saveGeminiKey(){
+  settings.gemini_key=document.getElementById('set-gemini-key').value.trim();
+  saveAll();
+  toast(settings.gemini_key?'AI Coach key saved on this device':'AI Coach key removed');
 }
 
 function toggleChatSidebar() {
@@ -733,6 +810,8 @@ function loadSession(id) {
   renderChatSidebar();
   renderChatHistory();
 }
+
+function switchSession(id){loadSession(id);}
 
 function parseMarkdown(text) {
   if (!text) return '';
@@ -794,9 +873,10 @@ function renderChatHistory() {
             </linearGradient>
           </defs>
         </svg>
-        <h1>Hi ${nf_username || 'there'},<br>What's on your mind?</h1>
+        <h1></h1>
       </div>
     `;
+    history.querySelector('.gemini-greeting h1').textContent=`Hi ${nf_username||'there'}, What's on your mind?`;
     return;
   }
 
@@ -892,31 +972,33 @@ async function sendChat(customParts = null){
     }
     
     aiDiv.removeChild(loadIndicator);
+    if(!res.body)throw new Error('Streaming is not supported by this browser');
     const reader = res.body.getReader();
     const decoder = new TextDecoder("utf-8");
     let fullResponse = '';
-    
+    let pending = '';
     while(true) {
       const {done, value} = await reader.read();
-      if(done) break;
-      const chunk = decoder.decode(value, {stream: true});
-      const lines = chunk.split('\n');
+      pending += decoder.decode(value||new Uint8Array(), {stream: !done});
+      const lines=pending.split(/\r?\n/);
+      pending=done?'':lines.pop();
       for(const line of lines) {
-        if(line.startsWith('data: ')) {
-          const dataStr = line.replace('data: ', '').trim();
-          if(dataStr) {
-            try {
-              const data = JSON.parse(dataStr);
-              if(data.candidates && data.candidates[0].content.parts[0].text) {
-                fullResponse += data.candidates[0].content.parts[0].text;
-                let displayResponse = fullResponse.replace(/\[LOG_MEAL:.*?\]/gi, '').trim();
-                aiDiv.innerHTML = parseMarkdown(displayResponse);
-                historyEl.scrollTop = historyEl.scrollHeight;
-              }
-            } catch(e) {}
+        if(!line.startsWith('data:'))continue;
+        const dataStr=line.slice(5).trim();
+        if(!dataStr||dataStr==='[DONE]')continue;
+        try {
+          const data=JSON.parse(dataStr);
+          const textChunk=data.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join('');
+          if(textChunk) {
+            fullResponse+=textChunk;
+            aiDiv.innerHTML=parseMarkdown(fullResponse.replace(/\[LOG_MEAL:.*?\]/gi,'').trim());
+            historyEl.scrollTop=historyEl.scrollHeight;
           }
+        } catch {
+          // Ignore non-JSON keep-alive lines while preserving subsequent events.
         }
       }
+      if(done)break;
     }
     
     const regex = /\[LOG_MEAL:\s*(.*?)\s*\|\s*(\d+\.?\d*)\s*\|\s*(\d+\.?\d*)\s*\|\s*(\d+\.?\d*)\s*\|\s*(\d+\.?\d*)\s*\|\s*([a-z]+)\s*\]/gi;
@@ -987,6 +1069,9 @@ async function handleImageUpload(event) {
 
 // ── INIT ──────────────────────────────────────────────────
 document.getElementById('page-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+window.addEventListener('resize',()=>{
+  if(document.getElementById('page-weight').classList.contains('active'))renderTrends();
+});
 renderChatSidebar();
 renderChatHistory();
 document.getElementById('log-meal-type').value=autoMealType();
@@ -998,17 +1083,6 @@ renderCustomRemaining();
 const imgInput = document.getElementById('chat-img-upload');
 if(imgInput) {
   imgInput.addEventListener('change', handleImageUpload);
-}
-
-// pre-populate weight log from bundled CSV data
-if(weightLog.length===0){
-  const csvWeights=[
-    {date:'2026-03-21',weight:55},{date:'2026-03-22',weight:55},{date:'2026-03-23',weight:53},
-    {date:'2026-03-24',weight:55},{date:'2026-03-25',weight:55},{date:'2026-03-26',weight:58},
-    {date:'2026-03-27',weight:55},{date:'2026-03-28',weight:59},{date:'2026-03-29',weight:55},
-    {date:'2026-03-30',weight:55}
-  ];
-  weightLog=csvWeights;
 }
 
 // ── CLOUD SYNC LOGIC ──────────────────────────────────────
@@ -1109,7 +1183,9 @@ import { initializeApp } from "firebase/app";
     window.syncToCloud = async () => {
       if(isRemoteUpdate) return;
       try {
-        await setDoc(docRef, { db, settings, mealLog, weightLog, waterLog, chatSessions: getSafeSessions() });
+        const cloudSettings={...settings};
+        delete cloudSettings.gemini_key;
+        await setDoc(docRef, { db, settings:cloudSettings, mealLog, weightLog, waterLog, chatSessions: getSafeSessions() });
       } catch (err) {
         console.error('Firebase DB Save error', err);
       }
@@ -1127,7 +1203,7 @@ import { initializeApp } from "firebase/app";
         if(data) {
           isRemoteUpdate = true;
           if(data.db) db = data.db;
-          if(data.settings) settings = data.settings;
+          if(data.settings) settings = {...data.settings,gemini_key:settings.gemini_key||''};
           if(data.mealLog) mealLog = data.mealLog;
           if(data.weightLog) weightLog = data.weightLog;
           if(data.waterLog) waterLog = data.waterLog;
@@ -1206,6 +1282,7 @@ window.saveFoodDB = saveFoodDB;
 window.deleteFood = deleteFood;
 window.initSettings = initSettings;
 window.saveSettings = saveSettings;
+window.saveGeminiKey = saveGeminiKey;
 window.sendChat = sendChat;
 window.finishAuth = finishAuth;
 window.connectCloud = connectCloud;
