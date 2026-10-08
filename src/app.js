@@ -30,7 +30,7 @@ const DEFAULT_DB = {
 };
 
 const UI_STYLE_VERSION=2;
-const DEFAULT_SETTINGS = {goal_kcal:2500,goal_protein:120,bulk_mode:false,light_mode:true,gemini_key:'',ui_style_version:UI_STYLE_VERSION};
+const DEFAULT_SETTINGS = {goal_kcal:2500,goal_protein:120,bulk_mode:false,light_mode:true,gemini_key:'',ui_style_version:UI_STYLE_VERSION,water_tracker:true};
 
 function LS(key,def){
   try{const v=localStorage.getItem(key);return v?JSON.parse(v):def;}catch{return def;}
@@ -149,6 +149,8 @@ function syncBulkUI(){
   });
   const tPill=document.getElementById('theme-pill');
   if(tPill) tPill.classList.toggle('on',settings.light_mode);
+  const wPill=document.getElementById('water-pill');
+  if(wPill) wPill.classList.toggle('on',settings.water_tracker);
   applyTheme();
 }
 
@@ -164,6 +166,14 @@ function toggleTheme(){
   toast(settings.light_mode ? 'Light mode ON' : 'Light mode OFF');
 }
 
+function toggleWaterTracker(){
+  settings.water_tracker = !settings.water_tracker;
+  syncBulkUI();
+  saveAll();
+  refreshDash();
+  toast(settings.water_tracker ? 'Water tracker ON' : 'Water tracker OFF');
+}
+
 syncBulkUI();
 
 // ── DASHBOARD ─────────────────────────────────────────────
@@ -177,6 +187,9 @@ function setRing(id,pct){
 }
 
 function refreshDash(){
+  const waterContainer = document.getElementById('water-tracker-container');
+  if(waterContainer) waterContainer.style.display = settings.water_tracker ? 'block' : 'none';
+
   const waterEl = document.getElementById('water-val');
   if(waterEl) waterEl.textContent = waterLog[today()] || 0;
 
@@ -200,15 +213,6 @@ function refreshDash(){
   const remEl=document.getElementById('dash-remaining');
   remEl.textContent=rem;
   remEl.style.color=rem<0?'var(--red)':'var(--text)';
-
-  document.getElementById('prog-cal').style.width=Math.min(calPct*100,100)+'%';
-  document.getElementById('prog-pro').style.width=Math.min(proPct*100,100)+'%';
-  document.getElementById('prog-carb').style.width=Math.min(t.carbs/300*100,100)+'%';
-  document.getElementById('prog-fat').style.width=Math.min(t.fat/100*100,100)+'%';
-  document.getElementById('prog-cal-n').textContent=Math.round(t.kcal)+' / '+Math.round(g.kcal);
-  document.getElementById('prog-pro-n').textContent=Math.round(t.protein)+'g / '+Math.round(g.protein)+'g';
-  document.getElementById('prog-carb-n').textContent=Math.round(t.carbs)+'g';
-  document.getElementById('prog-fat-n').textContent=Math.round(t.fat)+'g';
 
   const box=document.getElementById('sugg-box');
   const title=document.getElementById('sugg-title');
@@ -1316,6 +1320,7 @@ window.toggleBulk = toggleBulk;
 window.syncBulkUI = syncBulkUI;
 window.applyTheme = applyTheme;
 window.toggleTheme = toggleTheme;
+window.toggleWaterTracker = toggleWaterTracker;
 window.setRing = setRing;
 window.refreshDash = refreshDash;
 window.getTopProtein = getTopProtein;
