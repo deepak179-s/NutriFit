@@ -285,9 +285,9 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
   
   /* AI Coach Full Screen Mobile */
   #page-ai.active {
-    position: absolute !important;
-    top: 0; left: 0; right: 0;
-    height: 100%;
+    position: fixed !important;
+    inset: 0;
+    height: 100dvh;
     z-index: 999;
     margin: 0 !important;
     padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0 !important;

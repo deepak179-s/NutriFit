@@ -1366,6 +1366,8 @@ window.clearChat = clearChat;
 window.handleImageUpload = handleImageUpload;
 
 // Smart Keyboard & Viewport Handling for ChatGPT-like interaction
+let lastViewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+
 function updateVisualViewport() {
   const pageAi = document.getElementById('page-ai');
   const historyEl = document.getElementById('chat-history');
@@ -1374,39 +1376,39 @@ function updateVisualViewport() {
   
   if (window.innerWidth <= 720 && pageAi.classList.contains('active')) {
     if (window.visualViewport) {
-      // 1. Check if user is currently at the bottom (within a 25px threshold)
-      const isAtBottom = (historyEl.scrollHeight - historyEl.scrollTop - historyEl.clientHeight) <= 25;
+      const currentHeight = window.visualViewport.height;
+      const isKeyboardOpening = currentHeight < lastViewportHeight;
       
-      // 2. Lock the container to the visual viewport exactly
-      pageAi.style.height = `${window.visualViewport.height}px`;
-      pageAi.style.top = `${window.visualViewport.offsetTop}px`;
-      
-      // Force a synchronous reflow so that scrollHeight reflects the new height
-      void historyEl.offsetHeight;
-      
-      // 3. If they were at the bottom, strictly keep them at the bottom
-      if (isAtBottom) {
-        historyEl.scrollTop = historyEl.scrollHeight;
-      }
+      // 1. Check if user is currently at the bottom (within a 30px threshold)
+      // Check before the browser natively finishes resizing the layout
+      const isAtBottom = (historyEl.scrollHeight - historyEl.scrollTop - historyEl.clientHeight) <= 30;
       
       // Detect keyboard open for styling
-      if (window.visualViewport.height < window.screen.availHeight * 0.8) {
+      if (currentHeight < window.screen.availHeight * 0.8) {
         document.body.classList.add('keyboard-open');
       } else {
         document.body.classList.remove('keyboard-open');
       }
+
+      // If keyboard is opening and we are at the bottom, ensure we stay at the bottom 
+      // without jumping the scroll position around unnecessarily if we were in the middle.
+      if (isKeyboardOpening && isAtBottom) {
+        // Use a tiny timeout to allow the browser's native resize to apply the new layout height
+        setTimeout(() => {
+          if (historyEl) historyEl.scrollTop = historyEl.scrollHeight;
+        }, 10);
+      }
+      
+      lastViewportHeight = currentHeight;
     }
   } else {
     // Reset styles when not on AI page or on desktop
-    pageAi.style.height = '';
-    pageAi.style.top = '';
     document.body.classList.remove('keyboard-open');
   }
 }
 
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', updateVisualViewport);
-  window.visualViewport.addEventListener('scroll', updateVisualViewport);
 }
 window.addEventListener('resize', updateVisualViewport);
 // Run once on load
