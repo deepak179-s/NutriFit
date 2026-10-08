@@ -1,57 +1,43 @@
-const CACHE_NAME = 'nutrifit-cache-v2';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/nutrifit_icon.png'
-];
+const CACHE_NAME='nutrifit-cache-v3';
+const APP_SHELL=['/','/index.html','/nutrifit_icon.png'];
 
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
-  );
+self.addEventListener('install',event=>{
+  event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)));
   self.skipWaiting();
 });
 
-self.addEventListener('activate', event => {
+self.addEventListener('activate',event=>{
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key))))
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
-  // Only cache GET requests
-  if (event.request.method !== 'GET') return;
-  
-  // Don't intercept API calls to Google/Firebase
-  if (event.request.url.includes('googleapis.com') || event.request.url.includes('firebase')) return;
+async function networkFirst(request){
+  try{
+    const response=await fetch(request);
+    if(response&&response.ok&&response.type==='basic'){
+      const cache=await caches.open(CACHE_NAME);
+      cache.put(request,response.clone());
+    }
+    return response;
+  }catch{
+    return (await caches.match(request))||caches.match('/index.html');
+  }
+}
+
+self.addEventListener('fetch',event=>{
+  const request=event.request;
+  if(request.method!=='GET')return;
+  const url=new URL(request.url);
+  if(url.origin!==self.location.origin)return;
+
+  if(request.mode==='navigate'){
+    event.respondWith(networkFirst(request));
+    return;
+  }
 
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) return response;
-        return fetch(event.request).then(
-          response => {
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-            return response;
-          }
-        );
-      })
+    caches.match(request).then(cached=>cached||networkFirst(request))
   );
 });

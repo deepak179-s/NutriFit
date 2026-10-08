@@ -29,7 +29,8 @@ const DEFAULT_DB = {
   }
 };
 
-const DEFAULT_SETTINGS = {goal_kcal:2500,goal_protein:120,bulk_mode:false,light_mode:false,gemini_key:''};
+const UI_STYLE_VERSION=2;
+const DEFAULT_SETTINGS = {goal_kcal:2500,goal_protein:120,bulk_mode:false,light_mode:true,gemini_key:'',ui_style_version:UI_STYLE_VERSION};
 
 function LS(key,def){
   try{const v=localStorage.getItem(key);return v?JSON.parse(v):def;}catch{return def;}
@@ -39,13 +40,20 @@ function LSset(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch
 let nf_username = localStorage.getItem('nf_username') || '';
 
 let db = LS('nf_db', DEFAULT_DB);
-let settings = LS('nf_settings', DEFAULT_SETTINGS);
+const storedSettings=LS('nf_settings',{});
+let settings = {...DEFAULT_SETTINGS,...storedSettings};
+if(storedSettings.ui_style_version!==UI_STYLE_VERSION){
+  settings.light_mode=true;
+  settings.ui_style_version=UI_STYLE_VERSION;
+  LSset('nf_settings',settings);
+}
 let mealLog = LS('nf_log', []);
 let weightLog = LS('nf_weight', []);
 let waterLog = LS('nf_water', {});
-let chatSessions = LS('nf_sessions', [{id: Date.now(), title: 'New Chat', messages: []}]);
-let currentSessionId = chatSessions.length > 0 ? chatSessions[0].id : Date.now();
-if (chatSessions.length === 0) chatSessions.push({id: currentSessionId, title: 'New Chat', messages: []});
+let chatSessions = LS('nf_sessions', []);
+if(!Array.isArray(chatSessions)||chatSessions.length===0) chatSessions=[{id:Date.now(),title:'New Chat',messages:[]}];
+const savedSessionId=LS('nf_current_session',null);
+let currentSessionId=chatSessions.find(session=>String(session.id)===String(savedSessionId))?.id||chatSessions[0].id;
 
 function getSafeSessions() {
   return chatSessions.map(s => ({
@@ -64,6 +72,7 @@ function saveAll(){
   LSset('nf_weight',weightLog);
   LSset('nf_water',waterLog);
   LSset('nf_sessions',getSafeSessions());
+  LSset('nf_current_session',currentSessionId);
   if(window.syncToCloud) window.syncToCloud();
 }
 
@@ -109,6 +118,7 @@ function gotoPage(name,el){
   const activeItem=el||document.querySelector(`.nav-item[onclick*="'${name}'"]`);
   if(activeItem)activeItem.classList.add('active');
   document.getElementById('page-title').textContent=PAGE_TITLES[name]||name;
+  if(name!=='ai') document.getElementById('content').scrollTop=0;
   
   if(name === 'ai') {
     document.getElementById('content').style.overflowY = 'hidden';
@@ -119,7 +129,7 @@ function gotoPage(name,el){
   if(name==='dash')refreshDash();
   if(name==='log')renderLogForm();
   if(name==='weight')renderTrends();
-  if(name==='foods')renderDBList('morning');
+  if(name==='foods')switchDBTab(curDBTab,document.querySelector(`#db-tabs .tab[onclick*="'${curDBTab}'"]`));
   if(name==='settings')initSettings();
   if(name==='custom')renderCustomRemaining();
 }
@@ -143,8 +153,8 @@ function syncBulkUI(){
 }
 
 function applyTheme(){
-  if(settings.light_mode) document.documentElement.classList.add('light-mode');
-  else document.documentElement.classList.remove('light-mode');
+  document.documentElement.classList.toggle('light-mode',settings.light_mode);
+  document.documentElement.classList.toggle('dark-mode',!settings.light_mode);
 }
 
 function toggleTheme(){
@@ -410,12 +420,12 @@ async function fetchNutrients(){
 
   if (localFood) {
     const unitType = document.getElementById('ca-unit').value;
-    let factor = weight / localFood.serving; 
+    let factor = weight / localFood.serving;
     
     if (unitType === 'g' && localFood.serving <= 10) {
       factor = weight / 50; // Assume 1 unit = 50g for things like eggs/bananas
-    } else if (unitType === 'unit' && localFood.serving >= 50) {
-      factor = weight; // e.g. 2 units of 100g chicken = 2 * 100g = factor of 2
+    } else if (unitType === 'unit') {
+      factor = weight; // One unit is one saved serving, regardless of its gram size.
     }
 
     document.getElementById('ca-kcal').value = Math.round(localFood.kcal * factor);
@@ -716,7 +726,8 @@ function renderDBList(cat){
 function saveFoodDB(){
   const meal=document.getElementById('db-meal').value;
   const name=document.getElementById('db-name').value.trim().toLowerCase();
-  const srv=parseFloat(document.getElementById('db-serving').value)||100;
+  const servingInput=document.getElementById('db-serving').value.trim();
+  const srv=servingInput===''?100:parseFloat(servingInput);
   const kcal=parseFloat(document.getElementById('db-kcal').value)||0;
   const pro=parseFloat(document.getElementById('db-pro').value)||0;
   const carbs=parseFloat(document.getElementById('db-carbs').value)||0;
@@ -806,7 +817,9 @@ function renderChatSidebar() {
 }
 
 function loadSession(id) {
+  if(!chatSessions.some(session=>session.id===id))return;
   currentSessionId = id;
+  LSset('nf_current_session',currentSessionId);
   renderChatSidebar();
   renderChatHistory();
 }
@@ -908,14 +921,33 @@ function clearChat() {
   renderChatHistory();
 }
 
+let isChatSending=false;
+function setChatSending(isSending){
+  isChatSending=isSending;
+  const input=document.getElementById('chat-input-field');
+  const button=document.getElementById('chat-send-btn');
+  if(input)input.disabled=isSending;
+  if(button){
+    button.disabled=isSending;
+    button.setAttribute('aria-busy',String(isSending));
+  }
+}
+
+function normalizeMealType(value){
+  const type=String(value||'').trim().toLowerCase();
+  return ({breakfast:'morning',morning:'morning',lunch:'lunch',snack:'evening',evening:'evening',dinner:'dinner'})[type]||autoMealType();
+}
+
 async function sendChat(customParts = null){
   const input = document.getElementById('chat-input-field');
   const text = input.value.trim();
   if(!text && !customParts) return;
+  if(isChatSending){toast('Wait for the current reply to finish','red');return;}
   if(!(import.meta.env.VITE_GEMINI_API_KEY || settings.gemini_key)){ toast('Please add Gemini API key in Settings','red'); return; }
   
   const session = chatSessions.find(s => s.id === currentSessionId);
   if (!session) return;
+  setChatSending(true);
   
   if (session.messages.length === 0) {
     session.title = text ? text.substring(0, 30) + (text.length > 30 ? '...' : '') : 'Food Photo';
@@ -955,7 +987,7 @@ async function sendChat(customParts = null){
     const g = getGoals();
     const w = weightLog.length > 0 ? weightLog[weightLog.length-1].weight : 'unknown';
     
-    const sysPrompt = `You are an expert AI nutritionist and health coach named 'NutriFit AI'. The user's name is ${nf_username || 'User'}. Their daily goal is ${Math.round(g.kcal)} kcal and ${Math.round(g.protein)}g protein. Today they have consumed ${Math.round(t.kcal)} kcal and ${Math.round(t.protein)}g protein. Their current weight is ${w} kg. Be concise, encouraging, and helpful. Format your responses as plain text with short paragraphs. IMPORTANT: If the user tells you they ate or drank something, you MUST auto-log it for them by outputting this exact tag at the very end of your response: [LOG_MEAL: Food Name | kcal | protein | carbs | fat | mealType] (mealType must be breakfast, lunch, dinner, or snack). For example: [LOG_MEAL: 2 Eggs | 140 | 12 | 1 | 10 | breakfast]. If you don't know the exact macros, estimate them. If they ate multiple things, output multiple tags.`;
+    const sysPrompt = `You are an expert AI nutritionist and health coach named 'NutriFit AI'. The user's name is ${nf_username || 'User'}. Their daily goal is ${Math.round(g.kcal)} kcal and ${Math.round(g.protein)}g protein. Today they have consumed ${Math.round(t.kcal)} kcal and ${Math.round(t.protein)}g protein. Their current weight is ${w} kg. Be concise, encouraging, and helpful. Format your responses as plain text with short paragraphs. IMPORTANT: If the user tells you they ate or drank something, you MUST auto-log it for them by outputting this exact tag at the very end of your response: [LOG_MEAL: Food Name | kcal | protein | carbs | fat | mealType] (mealType must be morning, lunch, evening, or dinner). For example: [LOG_MEAL: 2 Eggs | 140 | 12 | 1 | 10 | morning]. If you don't know the exact macros, estimate them. If they ate multiple things, output multiple tags.`;
     
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:streamGenerateContent?alt=sse&key=${(import.meta.env.VITE_GEMINI_API_KEY || settings.gemini_key)}`, {
       method: 'POST',
@@ -1008,7 +1040,7 @@ async function sendChat(customParts = null){
       const [, mName, mKcal, mPro, mCarb, mFat, mType] = match;
       mealLog.push({
         date: today(),
-        meal: mType.toLowerCase(),
+        meal: normalizeMealType(mType),
         name: mName.trim(),
         kcal: parseFloat(mKcal),
         protein: parseFloat(mPro),
@@ -1036,11 +1068,18 @@ async function sendChat(customParts = null){
     session.messages.pop();
     saveAll();
     toast('Failed to reach AI Coach', 'red');
+  } finally {
+    setChatSending(false);
   }
 }
 
 async function handleImageUpload(event) {
   try {
+    if(isChatSending){
+      event.target.value='';
+      toast('Wait for the current reply to finish','red');
+      return;
+    }
     const file = event.target.files[0];
     if (!file) return;
     
@@ -1069,8 +1108,14 @@ async function handleImageUpload(event) {
 
 // ── INIT ──────────────────────────────────────────────────
 document.getElementById('page-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+let trendsResizeFrame;
 window.addEventListener('resize',()=>{
-  if(document.getElementById('page-weight').classList.contains('active'))renderTrends();
+  if(!document.getElementById('page-weight').classList.contains('active'))return;
+  if(trendsResizeFrame)cancelAnimationFrame(trendsResizeFrame);
+  trendsResizeFrame=requestAnimationFrame(()=>{
+    trendsResizeFrame=null;
+    renderTrends();
+  });
 });
 renderChatSidebar();
 renderChatHistory();
@@ -1136,7 +1181,11 @@ import { initializeApp } from "firebase/app";
     const nm = document.getElementById('auth-name').value.trim();
     
     if(!un || !pw) { toast('Please fill username and password', 'red'); return; }
-    if (!firestore) { toast('Cloud sync is unavailable. Check Vercel environment variables.', 'red'); return; }
+    if (!firestore) {
+      finishAuth(un);
+      toast('Using this device only — your data is saved locally.');
+      return;
+    }
     
     const userRef = doc(firestore, 'accounts', un);
     const btn = document.getElementById('btn-auth');
@@ -1203,11 +1252,18 @@ import { initializeApp } from "firebase/app";
         if(data) {
           isRemoteUpdate = true;
           if(data.db) db = data.db;
-          if(data.settings) settings = {...data.settings,gemini_key:settings.gemini_key||''};
+          if(data.settings) {
+            settings={...DEFAULT_SETTINGS,...data.settings,gemini_key:settings.gemini_key||''};
+            if(settings.ui_style_version!==UI_STYLE_VERSION){
+              settings.light_mode=true;
+              settings.ui_style_version=UI_STYLE_VERSION;
+            }
+          }
           if(data.mealLog) mealLog = data.mealLog;
           if(data.weightLog) weightLog = data.weightLog;
           if(data.waterLog) waterLog = data.waterLog;
-          if(data.chatSessions) chatSessions = data.chatSessions;
+          if(Array.isArray(data.chatSessions)&&data.chatSessions.length) chatSessions = data.chatSessions;
+          if(!chatSessions.some(session=>session.id===currentSessionId)) currentSessionId=chatSessions[0].id;
           
           LSset('nf_db',db);
           LSset('nf_settings',settings);
@@ -1215,6 +1271,7 @@ import { initializeApp } from "firebase/app";
           LSset('nf_weight',weightLog);
           LSset('nf_water',waterLog);
           LSset('nf_sessions',chatSessions);
+          LSset('nf_current_session',currentSessionId);
           
           syncBulkUI();
           refreshDash();
@@ -1223,6 +1280,8 @@ import { initializeApp } from "firebase/app";
           if(document.getElementById('page-custom').classList.contains('active')) renderCustomRemaining();
           if(document.getElementById('page-settings').classList.contains('active')) initSettings();
           if(document.getElementById('page-foods').classList.contains('active')) renderDBList(curDBTab);
+          renderChatSidebar();
+          renderChatHistory();
           
           isRemoteUpdate = false;
         }
