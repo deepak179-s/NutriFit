@@ -1356,3 +1356,16 @@ window.deleteSession = deleteSession;
 window.toggleChatSidebar = toggleChatSidebar;
 window.clearChat = clearChat;
 window.handleImageUpload = handleImageUpload;
+
+// Handle mobile keyboard open/close
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const historyEl = document.getElementById('chat-history');
+    if (historyEl) historyEl.scrollTop = historyEl.scrollHeight;
+  });
+} else {
+  window.addEventListener('resize', () => {
+    const historyEl = document.getElementById('chat-history');
+    if (historyEl) historyEl.scrollTop = historyEl.scrollHeight;
+  });
+}
