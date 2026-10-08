@@ -1,4 +1,4 @@
-const CACHE_NAME='nutrifit-cache-v5';
+const CACHE_NAME='nutrifit-cache-v6';
 const APP_SHELL=['/','/index.html','/nutrifit_icon.png'];
 
 self.addEventListener('install',event=>{

@@ -264,8 +264,8 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
   #main{width:100%;height:100%;min-height:0}
   #topbar{min-height:98px;padding:calc(17px + env(safe-area-inset-top)) 20px 14px;background:var(--bg1)}
   .page-title{font-size:31px;letter-spacing:-1.35px}
-  .page-date{margin-top:6px;font-size:13px}
-  #content{padding:2px 16px calc(200px + env(safe-area-inset-bottom));background:var(--bg1)}
+  #content{padding:2px 16px 20px;background:var(--bg1)}
+  #content::after{content:"";display:block;min-height:calc(120px + env(safe-area-inset-bottom));flex-shrink:0}
   .page{max-width:none}
   .grid2,.grid3,.grid4{grid-template-columns:1fr!important;gap:14px!important}
   #page-dash>.grid2:first-child{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
@@ -308,7 +308,7 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
   .chat-header{padding:2px 2px 12px}
   .chat-history{padding:12px 2px 18px}
   .chat-msg{max-width:88%;font-size:15px;line-height:1.55}
-  .chat-input-area{margin-bottom:2px;padding:6px 7px 6px 8px;border-radius:20px;background:var(--bg3);width:100%;box-sizing:border-box}
+  .chat-input-area{margin:0 0 2px 0;padding:6px 7px 6px 8px;border-radius:20px;background:var(--bg3);width:auto;align-self:stretch}
   .chat-input{font-size:16px;flex:1;min-width:0;}
   .chat-send-btn{width:42px;height:42px;flex-basis:42px;flex-shrink:0;}
   .chat-sidebar{position:fixed;z-index:300;top:0;bottom:0;left:0;width:min(330px,calc(100vw - 52px));padding:calc(26px + env(safe-area-inset-top)) 18px 22px;border:0;border-radius:0 24px 24px 0;background:var(--surface);box-shadow:12px 0 34px rgba(23,24,29,.16);transform:translateX(0);transition:transform .16s ease}
