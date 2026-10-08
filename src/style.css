@@ -254,7 +254,7 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
 @media(max-width:720px){
   body{background:var(--bg1)}
   #app{display:block;overflow:hidden}
-  #sidebar{position:fixed;z-index:100;right:0;bottom:0;left:0;width:100%;height:calc(72px + env(safe-area-inset-bottom));min-height:72px;padding:5px 5px calc(5px + env(safe-area-inset-bottom));border:none;border-top:1px solid var(--border);border-radius:0;background:var(--surface);box-shadow:0 -4px 20px rgba(0,0,0,.05)}
+  #sidebar{position:fixed;z-index:100;right:12px;bottom:max(10px,env(safe-area-inset-bottom));left:12px;width:auto;height:72px;min-height:72px;padding:5px;border:1px solid var(--border);border-radius:26px;background:var(--surface);box-shadow:0 12px 30px rgba(23,24,29,.13)}
   .sidebar-top,.sidebar-bottom,.nav-label{display:none}
   .nav-section{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;width:100%;height:100%}
   #sidebar .nav-item{display:flex;min-width:0;min-height:0;height:60px;padding:5px 1px;justify-content:center;gap:3px;border-radius:19px;flex-direction:column;text-align:center;font-size:9px;font-weight:700;color:var(--text3)}
@@ -265,7 +265,7 @@ svg.ring{width:80px;height:80px;transform:rotate(-90deg)}
   #topbar{min-height:98px;padding:calc(17px + env(safe-area-inset-top)) 20px 14px;background:var(--bg1)}
   .page-title{font-size:31px;letter-spacing:-1.35px}
   .page-date{margin-top:6px;font-size:13px}
-  #content{padding:2px 16px calc(140px + env(safe-area-inset-bottom));background:var(--bg1)}
+  #content{padding:2px 16px calc(200px + env(safe-area-inset-bottom));background:var(--bg1)}
   .page{max-width:none}
   .grid2,.grid3,.grid4{grid-template-columns:1fr!important;gap:14px!important}
   #page-dash>.grid2:first-child{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
